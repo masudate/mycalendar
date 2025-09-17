@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<!-- 1) タイトル：中央揃え -->
+<h2 class="record-title">設定</h2>
+
+<!-- 2) 本文：幅を記録画面と揃えて中央配置（先頭位置は揃う） -->
+<div class="settings-wrap">
+  <!-- 3) 各項目：タイトルは左上、ボタンはタイトルと同じ高さ（右側） -->
+  <section class="field-card">
+    <div class="field-header setting-head">
+      <label>ユーザー名</label>
+      <a href="{% url 'change_username' %}" class="btn btn-primary">変更する</a> <!-- 4) ボタンはタイトルと同じ高さ -->
+    </div>
+    <div class="setting-body">
+      <div class="setting-value">{{ user.username }}</div>
+    </div>
+  </section>
+
+  <section class="field-card">
+    <div class="field-header setting-head">
+      <label>メールアドレス</label>
+      <a href="{% url 'change_email' %}" class="btn btn-primary">変更する</a>
+    </div>
+    <div class="setting-body">
+      <div class="setting-value">{{ user.email }}</div>
+    </div>
+  </section>
+
+  <section class="field-card">
+    <div class="field-header setting-head">
+      <label>パスワード</label>
+      <a href="{% url 'change_password' %}" class="btn btn-primary">変更する</a>
+    </div>
+    <div class="setting-body">
+      <div class="setting-value">********</div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ページ専用スタイル -->
+<style>
+    /* タイトル中央 */
+        .settings-title{
+        text-align:center;
+        margin: 0 0 12px;
+    }
+
+    /* 本文の幅を記録画面に合わせて中央へ */
+        .settings-wrap{
+        max-width: var(--field-width, 520px);
+        margin: 0 auto;
+    }
+
+    /* 各カードのヘッダ：左にタイトル、右にボタン（縦中央） */
+    .setting-head{
+        display:flex;
+        justify-content: space-between;
+        align-items:center;
+        margin-bottom: 8px; /* タイトルと本文の間隔 */
+    }
+
+    /* 値の表示 */
+    .setting-value{
+        font-size: 15px;
+        color:#333;
+        word-break: break-word;
+    }
+
+    /* （任意）カード間の余白を統一したいとき */
+    .field-card{ margin-bottom: 14px; }
+</style>
+
+{% endblock %}

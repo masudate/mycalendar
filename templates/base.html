@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ジブンカレンダー</title>
+
+    <style>
+    /* ===============================
+    1) 全体レイアウト
+    =============================== */
+    body {
+        margin: 0;
+        font-family: sans-serif;
+    }
+
+    header {
+        background-color: #B0E0E6; /* 薄めの水色 */
+        padding: 10px 20px;
+    }
+
+    nav ul {
+        display: flex;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        align-items: center;
+    }
+
+    nav li {
+        color: white;
+        flex: 1 1 0;
+        text-align: center;
+    }
+
+    nav a {
+        color: white;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 20px; /* ヘッダーの文字サイズ */
+    }
+
+    nav a:hover { text-decoration: underline; }
+
+    nav li strong {
+        font-size: 25px;
+        color: white;
+        border: 2px solid white;
+        padding: 5px 10px;
+        border-radius: 8px;
+    }
+
+    .help {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        line-height: 20px;
+        text-align: center;
+        border-radius: 50%;
+        border: 1px solid #000;
+        cursor: pointer;
+        font-weight: bold;
+        margin-left: 5px;
+    }
+
+    /* 共通ページタイトル（記録・設定など） */
+    :root { --title-offset: 16px; } /* ここを 12〜24px で微調整OK */
+    .record-title{
+    text-align: center;
+    margin: var(--title-offset) 0 12px; /* 上に少し余白を追加 */
+    }
+
+    /* ===============================
+    2) 気分セレクト専用
+    =============================== */
+    #mood {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        padding-right: 30px;
+        background: none;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+
+        /* カスタム矢印 */
+        background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 16px;
+
+        font-size: 22px;  /* 選択後の欄 */
+        text-align: center;
+    }
+    #mood option { font-size: 22px; }  /* プルダウン内 */
+
+    /* ===============================
+    3) モーダル共通
+    =============================== */
+    .modal { position: fixed; inset: 0; display: none; }
+    .modal.show { display: block; }
+
+    .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.35); }
+
+    .modal-dialog {
+        text-align: center;
+        position: absolute;
+        left: 50%; top: 50%;
+        transform: translate(-50%, -50%);
+        background: #fff;
+        padding: 16px;
+        border-radius: 12px;
+        min-width: 280px;
+        max-width: 90%;
+        box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    }
+
+    .modal-title { margin: 0 0 8px; font-size: 1.05rem; }
+
+    .modal-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-top: 16px;
+    }
+
+    /* ===============================
+    4) ボタン共通
+    =============================== */
+    .btn {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        border: none;
+        transition: background 0.2s ease, opacity 0.2s ease;
+        min-width: 100px;
+        text-align: center;
+        box-sizing: border-box;
+        text-decoration: none;  /* 通常は下線なし */
+    }
+    .btn:hover { text-decoration: underline; }
+
+    .btn-primary { background: #1a73e8; color: #fff; }
+    .btn-primary:hover { background: #1669c1; }
+
+    .btn-danger { background: #e05a5a; color: #fff; }
+    .btn-danger:hover { background: #cc4f4f; }
+
+    .btn-secondary { background: #f3f4f6; color: #333; border: 1px solid #ddd; }
+    .btn-secondary:hover { background: #e5e7eb; }
+
+    /* ===============================
+    5) フォーム共通（record.html 用）
+    =============================== */
+    :root { --field-width: 520px; }  /* 幅の調整可 */
+
+    .record-form { max-width: 1060px; margin: 0 auto; }
+
+    .form-row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 14px;
+        max-width: var(--field-width);
+    }
+
+    label { font-weight: 600; }
+
+    input[type="text"],
+    input[type="date"],
+    select,
+    textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        box-sizing: border-box;
+    }
+
+    textarea { min-height: 120px; resize: none; }
+
+    /* 左右レイアウト（日付/気分 vs 写真） */
+    .top-grid {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+    /* 写真未登録時のブロックを中央寄せ */
+    .single-col .left-col {
+        flex: 0 1 auto;
+        width: 100%;
+        max-width: 480px;
+    }
+
+    .no-photo-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 8px;
+    }
+
+    .no-photo-wrap .form-row {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 480px;
+    }
+
+    .no-photo-wrap label {
+        align-self: center;
+        text-align: center;
+    }
+
+    .no-photo-wrap input[type="file"] {
+        width: auto;
+        margin: 0 auto;
+    }
+
+    .no-photo-wrap #photo-preview-wrap { justify-content: center; }
+
+    .left-col { flex: 0 0 var(--field-width); max-width: var(--field-width); }
+    .right-col { flex: 0 0 auto; }
+
+    /* 写真表示用 */
+        .current-photo {
+        display: inline-grid;  /* 画像幅にフィット */
+        grid-template-columns: 1fr;
+        grid-auto-rows: auto;
+        gap: 8px; /* タイトル・写真・ボタンの間隔 */
+    }
+
+    .current-photo .cp-img {
+        width: 480px;
+        max-width: 90vw;
+        height: 320px;
+        object-fit: cover;
+        border-radius: 8px;
+        display: block;
+    }
+
+    /* 写真操作ボタン（枠の右下寄せ・重ねず） */
+    .photo-actions {
+        justify-self: end;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-top: 8px;
+    }
+
+    .filebtn {
+        padding: 6px 10px;
+        background: #f3f4f6;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    /* ファイル入力非表示（label 経由で開く） */
+    .hidden-file {
+        position: absolute !important;
+        width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* サブカード風デザイン */
+    .field-card {
+        background: #fafafa;
+        border: 1px solid #eee;
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-bottom: 14px;
+        box-shadow: 0 1px 0 rgba(0,0,0,.02);
+    }
+
+    /* セクション見出し */
+    .field-header {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+    .field-header label { margin: 0; }
+    .field-hint { color: #888; font-size: 12px; }
+
+    /* 赤のアウトライン（写真削除用） */
+    .btn-danger-outline {
+        background: #fff;
+        color: #d34f4f;
+        border: 1px solid #e3a0a0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    .btn-danger-outline:hover {
+        background: #fff5f5;
+        border-color: #d97b7b;
+        color: #c33e3e;
+    }
+
+    /* 共通：ボタン行（中央寄せ） */
+    .button-row {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        margin-top: 16px;
+    }
+
+    /* ===============================
+    6) フラッシュ & フォームエラー（中央寄せ）
+    =============================== */
+    .messages {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        margin: 6px 0 10px;
+    }
+    .message {
+        margin: 0;
+        padding: 0;
+        border: none;
+        background: transparent;
+        box-shadow: none;
+        text-align: center;
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+    .message.error   { color:#b00020; }
+    .message.success { color:#0f6b2e; }
+    .message.info    { color:#1a73e8; }
+    .message.warning { color:#8a6d00; }
+
+    .errorlist {
+    list-style: none;
+        padding: 0;
+        margin: 6px 0 8px;
+        text-align: center;
+        color:#b00020;
+        font-size: 0.9rem;
+    }
+    .errorlist li { margin: 2px 0; }
+
+    /* ===============================
+    7) Settings フォーム（設定画面共通）
+    =============================== */
+    .settings-form{
+        max-width:480px;         /* フォームの横幅 */
+        margin:0 auto;           /* ページ中央に配置 */
+    }
+
+    .settings-form .form-row{
+        display:flex;
+        flex-direction:column;
+        gap:6px;
+        margin:12px 0;
+        align-items:center;      /* 行（ラベル＋入力）を中央に寄せる */
+    }
+
+    /* ラベルと入力欄は“行の中”で中央に置きつつ、見出しは左寄せを維持 */
+    .settings-form label{
+        width:100%;
+        max-width:480px;
+        font-weight:600;
+        text-align:left;         /* タイトル文字は左寄せのまま */
+    }
+
+    .settings-form input[type="text"],
+    .settings-form input[type="email"],
+    .settings-form input[type="password"],
+    .settings-form textarea{
+        width:100%;
+        max-width:480px;         /* 入力欄の実幅も中央に */
+        height:40px;
+        font-size:16px;
+        padding:8px 10px;
+        border:1px solid #ccc;
+        border-radius:6px;
+        box-sizing:border-box;
+    }
+
+    .settings-form textarea{ min-height:120px; }
+
+    /* ボタン行：中央寄せ */
+    .settings-form .button-row{
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        gap:12px;
+        margin-top:16px;
+    }
+    </style>
+
+</head>
+
+
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><strong>ジブンカレンダー</strong></li>
+                <li><a href="{% url 'home' %}">カレンダー</a></li>
+                <li><a href="{% url 'record' %}">記録する</a></li>
+                <li><a href="{% url 'settings' %}">設定</a></li>
+                <li><a href="{% url 'logout' %}" id="logout-link">ログアウト</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- メッセージ表示 -->
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <p class="message {{ message.tags }}">{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- ログアウト確認モーダル -->
+    <div id="logout-modal" class="modal" aria-hidden="true">
+        <div class="modal-backdrop" data-dismiss></div>
+        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="logout-title">
+            <h3 id="logout-title" class="modal-title">ログアウトしますか？</h3>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-primary" id="confirm-logout">ログアウト</button>
+                <button type="button" class="btn btn-secondary" data-dismiss>キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 記録削除モーダル -->
+    <div id="delete-modal" class="modal" aria-hidden="true">
+        <div class="modal-backdrop" data-dismiss></div>
+        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+            <h3 id="delete-title" class="modal-title">この記録を削除しますか？</h3>
+            <p>削除すると元に戻せません。</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-danger" id="confirm-delete">記録削除</button>
+                <button type="button" class="btn btn-secondary" data-dismiss>キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+   <!-- 写真削除モーダル -->
+    <div id="photo-delete-modal" class="modal" aria-hidden="true">
+        <div class="modal-backdrop" data-dismiss></div>
+        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="photo-delete-title">
+            <h3 id="photo-delete-title" class="modal-title">この写真を削除しますか？</h3>
+            <p>削除すると元に戻せません。</p>
+            <form id="photo-delete-form" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="remove_photo" value="1">
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-danger-outline">写真削除</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss>キャンセル</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- JS -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- ログアウトモーダル ---
+        const logoutLink = document.getElementById('logout-link');
+        const modal = document.getElementById('logout-modal');
+        const confirmBtn = document.getElementById('confirm-logout');
+        const dismissEls = modal.querySelectorAll('[data-dismiss]');
+        let targetHref = null;
+
+        function openModal(href){
+            targetHref = href;
+            modal.classList.add('show');
+            modal.setAttribute('aria-hidden','false');
+        }
+        function closeModal(){
+            modal.classList.remove('show');
+            modal.setAttribute('aria-hidden','true');
+            targetHref = null;
+        }
+
+        if (logoutLink) {
+            logoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                openModal(logoutLink.getAttribute('href'));
+            });
+        }
+        confirmBtn.addEventListener('click', () => {
+            if (targetHref) window.location.href = targetHref;
+        });
+        dismissEls.forEach(el => el.addEventListener('click', closeModal));
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+        // --- 記録削除モーダル ---
+        const deleteModal = document.getElementById('delete-modal');
+        const confirmDeleteBtn = document.getElementById('confirm-delete');
+        const dismissDeleteEls = deleteModal.querySelectorAll('[data-dismiss]');
+        let deleteTargetUrl = null;
+
+        document.querySelectorAll('[data-delete-url]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                deleteTargetUrl = btn.getAttribute('data-delete-url');
+                deleteModal.classList.add('show');
+                deleteModal.setAttribute('aria-hidden','false');
+            });
+        });
+
+        confirmDeleteBtn.addEventListener('click', () => {
+            if (deleteTargetUrl) window.location.href = deleteTargetUrl;
+        });
+        dismissDeleteEls.forEach(el => el.addEventListener('click', () => {
+            deleteModal.classList.remove('show');
+            deleteModal.setAttribute('aria-hidden','true');
+            deleteTargetUrl = null;
+        }));
+
+        // --- 写真削除モーダル ---
+        const photoDeleteModal = document.getElementById('photo-delete-modal');
+        const photoDeleteForm = document.getElementById('photo-delete-form');
+        const dismissPhotoEls = photoDeleteModal.querySelectorAll('[data-dismiss]');
+
+        // record.html のボタンを拾う
+        document.querySelectorAll('[data-photo-delete]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                // 今のURLをそのまま form の action に設定
+                photoDeleteForm.action = window.location.href;
+                // モーダルを開く
+                photoDeleteModal.classList.add('show');
+                photoDeleteModal.setAttribute('aria-hidden','false');
+            });
+        });
+
+        // モーダル閉じる
+        function closePhotoDeleteModal(){
+            photoDeleteModal.classList.remove('show');
+            photoDeleteModal.setAttribute('aria-hidden','true');
+        }
+        dismissPhotoEls.forEach(el => el.addEventListener('click', closePhotoDeleteModal));
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePhotoDeleteModal(); });
+
+    });
+    </script>
+</body>
+</html>

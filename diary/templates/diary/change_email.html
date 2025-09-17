@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="record-title">メールアドレスを変更する</h2>
+
+<form method="post" class="settings-form">
+  {% csrf_token %}
+
+  <div class="form-row">
+    <label for="current_email">現在のメールアドレス</label>
+    <input type="email" id="current_email" name="current_email" value="{{ user.email }}" readonly>
+  </div>
+
+  <div class="form-row">
+    <label for="new_email">新しいメールアドレス</label>
+    <input type="email" id="new_email" name="new_email" required>
+  </div>
+
+  <div class="form-row">
+    <label for="confirm_email">新しいメールアドレス（確認）</label>
+    <input type="email" id="confirm_email" name="confirm_email" required>
+  </div>
+
+  <div class="button-row">
+    <button type="submit" class="btn btn-primary">保存する</button>
+    <a href="{% url 'settings' %}" class="btn btn-secondary">キャンセル</a>
+  </div>
+</form>
+{% endblock %}

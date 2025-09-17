@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-container">
+  <h2>新規ユーザー登録</h2>
+
+  <form method="post">
+      {% csrf_token %}
+      <div style="margin-bottom: 10px;">
+          <label for="username">ユーザー名</label>
+          <input type="text" name="username" required>
+      </div>
+
+      <div style="margin-bottom: 10px;">
+          <label for="email">メールアドレス</label>
+          <input type="email" name="email" required>
+      </div>
+
+      <div style="margin-bottom: 10px;">
+          <label for="password">パスワード</label>
+          <input type="password" name="password" required>
+      </div>
+
+      <div style="margin-bottom: 10px;">
+          <label for="confirm_password">パスワード（確認用）</label>
+          <input type="password" name="confirm_password" required>
+      </div>
+
+      <button type="submit">登録する</button>
+  </form>
+
+  <!-- ログイン画面に飛ぶリンク -->
+  <p style="margin-top: 15px;">
+    <a href="{% url 'login' %}" style="text-decoration: underline; color: blue;">ログイン画面へ</a>
+  </p>
+
+</div>
+{% endblock %}
+

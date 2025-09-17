@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="calendar-header">
+  <a class="nav-link" href="?year={{ prev_month.year }}&month={{ prev_month.month }}">前月</a>
+  <h2 class="ym">{{ year }}年 {{ month }}月</h2>
+  <a class="nav-link" href="?year={{ next_month.year }}&month={{ next_month.month }}">次月</a>
+</div>
+
+<table class="calendar-table">
+  <tr class="weekday-row">
+    <th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th><th>日</th>
+  </tr>
+
+  {% for week in month_days %}
+    <tr class="week-row {% if forloop.first %}first-week{% endif %}">
+      {% for day in week %}
+        <td class="calendar-day {% if day.month != month %}is-outside{% endif %} {% if day == today %}is-today{% endif %}"
+            data-date="{{ day|date:'Y-m-d' }}">
+          <div class="cell-top">
+            <span class="day-number">{{ day.day }}</span>
+            <span class="dot-slot"></span>
+          </div>
+          <div class="cell-photo"></div>
+        </td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+</table>
+
+{{ records_by_date|json_script:"records-by-date" }}
+
+<style>
+/* ヘッダー */
+.calendar-header{
+  display:flex; align-items:center; justify-content:center; gap:16px; margin:8px 0 4px;
+}
+.calendar-header .ym{ margin:0; font-size:1.4rem; }
+.calendar-header .nav-link{
+  color:#1a73e8; text-decoration:underline; font-weight:500;
+}
+.calendar-header .nav-link:hover{ opacity:0.9; }
+
+/* テーブル */
+.calendar-table{
+  border-collapse:collapse;
+  width:90%;
+  text-align:center;
+  margin:20px auto;
+  table-layout:fixed;
+}
+.calendar-table td{
+  border:1px solid #ddd;
+  width:14.2857%;
+  height:100px;
+  vertical-align:top;
+  padding:4px;
+  position:relative;
+}
+
+/* ▼ カレンダーセルにカーソルを乗せたときの反応 */
+.calendar-day {
+  cursor: pointer;  /* マウスカーソルを「手」にする */
+  transition: background-color 0.2s ease;
+}
+.calendar-day:hover {
+  background-color: rgba(0, 0, 0, 0.05); /* 薄いグレーを重ねる */
+}
+
+/* 曜日ヘッダ */
+.calendar-table .weekday-row th{
+  border:1px solid #000;
+  padding:10px;
+  background:#f7f7f7;
+  font-weight:600;
+}
+/* 見出し真下の二重線防止 */
+.calendar-table .week-row.first-week td{ border-top:none; }
+
+/* 日付と●の横並び */
+.cell-top{ display:flex; align-items:center; justify-content:space-between; }
+.day-number{ text-align:left; font-weight:600; }
+.dot{ text-decoration:none; font-size:16px; }
+
+/* 今日のセル */
+.is-today{ background-color: rgba(176, 224, 230, 0.5); }/* ヘッダー色の透明度50% */
+
+/* 今日/前後月 */
+.is-outside{ color:#c7c7c7; }
+.is-outside .dot{ color:#d5d5d5; pointer-events:none; }
+
+/* 写真サムネ用 */
+.cell-photo { margin-top: 4px; }
+.cell-photo img {
+  display:block;
+  width:100%;
+  max-height:60px;
+  object-fit:cover;
+  border-radius:4px;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // 1) 色付き●と写真の描画（既存の JSON から）
+  const mapEl = document.getElementById("records-by-date");
+  const dataMap = mapEl ? JSON.parse(mapEl.textContent) : {};
+
+  document.querySelectorAll(".calendar-day").forEach(td => {
+    const iso = td.dataset.date;
+    const rec = dataMap[iso];
+
+    const color = rec && (typeof rec === "string" ? rec : rec.color);
+    const photo = rec && (typeof rec === "object" ? rec.photo : null);
+
+    // ●（色）
+    const slot = td.querySelector(".dot-slot");
+    if (slot && color) {
+      const a = document.createElement("a");
+      a.className = "dot";
+      a.href = `{% url 'record' %}?date=` + iso;
+      a.textContent = "●";
+      a.style.color = color;
+      slot.replaceChildren(a);
+    }
+
+    // 写真
+    const box = td.querySelector(".cell-photo");
+    if (box) {
+      box.innerHTML = "";
+      if (photo) {
+        const img = document.createElement("img");
+        img.src = "/media/" + photo;   // MEDIA_URLが /media/ 前提
+        img.alt = "";
+        box.appendChild(img);
+      }
+    }
+  });
+
+  // セル全体クリックで遷移（画像・数字・● どこでもOK）
+  //    a.dot クリックはリンク遷移
+  document.querySelector(".calendar-table")?.addEventListener("click", (e) => {
+    const td = e.target.closest("td.calendar-day");
+    if (!td) return;
+
+    // a.dotならブラウザの通常リンクでOK（ここでは何もしない）
+    if (e.target.closest("a.dot")) return;
+
+    const iso = td.dataset.date;
+    if (!iso) return;
+    window.location.href = `{% url 'record' %}?date=${iso}`;
+  });
+
+  // 3) アクセシビリティ（キーボードでも遷移）
+  document.querySelectorAll("td.calendar-day").forEach(td => {
+    td.tabIndex = 0; // フォーカス可能に
+    td.style.cursor = "pointer";
+    td.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        const iso = td.dataset.date;
+        if (iso) window.location.href = `{% url 'record' %}?date=${iso}`;
+      }
+    });
+  });
+});
+</script>
+
+
+{% endblock %}
