@@ -10,7 +10,7 @@
   <section class="field-card">
     <div class="field-header setting-head">
       <label>ユーザー名</label>
-      <a href="{% url 'change_username' %}" class="btn btn-primary">変更する</a> <!-- 4) ボタンはタイトルと同じ高さ -->
+      <a href="{% url 'change_username' %}" class="btn btn-primary">変更</a> <!-- 4) ボタンはタイトルと同じ高さ -->
     </div>
     <div class="setting-body">
       <div class="setting-value">{{ user.username }}</div>
@@ -20,7 +20,7 @@
   <section class="field-card">
     <div class="field-header setting-head">
       <label>メールアドレス</label>
-      <a href="{% url 'change_email' %}" class="btn btn-primary">変更する</a>
+      <a href="{% url 'change_email' %}" class="btn btn-primary">変更</a>
     </div>
     <div class="setting-body">
       <div class="setting-value">{{ user.email }}</div>
@@ -30,7 +30,7 @@
   <section class="field-card">
     <div class="field-header setting-head">
       <label>パスワード</label>
-      <a href="{% url 'change_password' %}" class="btn btn-primary">変更する</a>
+      <a href="{% url 'change_password' %}" class="btn btn-primary">変更</a>
     </div>
     <div class="setting-body">
       <div class="setting-value">********</div>

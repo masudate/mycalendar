@@ -12,64 +12,88 @@ from datetime import date as dt_date
 import calendar
 from .forms import RecordForm
 from .models import Record, Mood
+import re
 
 
-#設定／ユーザー名変更
 def change_username(request):
     if request.method == "POST":
-        new_username = request.POST.get("username")
-        if new_username:  # 入力がある場合のみ更新
+        new_username = (request.POST.get("new_username") or "").strip()
+        if not new_username:
+            messages.error(request, "新しいユーザー名を入力してください")
+        # 変更がない場合
+        elif new_username == request.user.username:
+            messages.error(request, "現在のユーザー名と同じです")
+        # 重複チェック（自分以外）
+        elif User.objects.filter(username=new_username).exclude(pk=request.user.pk).exists():
+            messages.error(request, "このユーザー名は既に使用されています")
+        else:
             request.user.username = new_username
             request.user.save()
-            return redirect("settings")  # 設定画面に戻る
+            messages.success(request, "ユーザー名を変更しました")
+            return redirect("settings")
     return render(request, "diary/change_username.html")
 
-#設定／メールアドレス変更
+
 def change_email(request):
     if request.method == "POST":
-        current_email = request.POST.get("current_email")
-        new_email = request.POST.get("new_email")
-        confirm_email = request.POST.get("confirm_email")
+        new_email     = (request.POST.get("new_email") or "").strip()
+        confirm_email = (request.POST.get("confirm_email") or "").strip()
 
-        # 現在のメールアドレスが正しいかチェック
-        if current_email != request.user.email:
-            messages.error(request, "現在のメールアドレスが一致しません。")
-        elif new_email != confirm_email:
-            messages.error(request, "新しいメールアドレスが一致しません。")
+        # 0文字エラー
+        if not new_email:
+            messages.error(request, "新しいメールアドレスを入力してください")
+        # 現在と同じ（大文字小文字を無視）
+        elif (request.user.email or "").lower() == new_email.lower():
+            messages.error(request, "現在のメールアドレスと同じです")
+        # 形式チェック（簡易）
+        elif not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", new_email):
+            messages.error(request, "正しいメールアドレスの形式で入力してください")
+        # 確認用と一致（大文字小文字を無視）
+        elif new_email.lower() != confirm_email.lower():
+            messages.error(request, "新しいメールアドレスが一致しません")
+        # 他ユーザーと重複（大文字小文字を無視）
+        elif User.objects.filter(email__iexact=new_email).exclude(pk=request.user.pk).exists():
+            messages.error(request, "このメールアドレスは既に使用されています")
         else:
-            request.user.email = new_email
+            request.user.email = (new_email or "").strip().lower()
             request.user.save()
-            messages.success(request, "メールアドレスを変更しました！")
+            messages.success(request, "メールアドレスを変更しました")
             return redirect("settings")
     return render(request, "diary/change_email.html")
 
-#設定／パスワード変更
+
 def change_password(request):
     if request.method == "POST":
-        current_password = request.POST.get("current_password")
-        new_password = request.POST.get("new_password")
-        confirm_password = request.POST.get("confirm_password")
+        current_password = request.POST.get("current_password", "").strip()
+        new_password = request.POST.get("new_password", "").strip()
+        confirm_password = request.POST.get("confirm_password", "").strip()
 
-        # 現在のパスワードが正しいかチェック
+        if not current_password or not new_password or not confirm_password:
+            messages.error(request, "すべての項目を入力してください")
+            return redirect("change_password")
         if not request.user.check_password(current_password):
-            messages.error(request, "現在のパスワードが正しくありません。")
+            messages.error(request, "現在のパスワードが正しくありません")
             return redirect("change_password")
-
-        # 新しいパスワードと確認用が一致するかチェック
+        if new_password == current_password:
+            messages.error(request, "現在のパスワードと同じです")
+            return redirect("change_password")
         if new_password != confirm_password:
-            messages.error(request, "新しいパスワードが一致しません。")
+            messages.error(request, "新しいパスワードが一致しません")
+            return redirect("change_password")
+        if not new_password:
+            messages.error(request, "新しいパスワードを入力してください")
+            return redirect("change_password")
+        if len(new_password) < 6:
+            messages.error(request, "パスワードは6文字以上にしてください")
             return redirect("change_password")
 
-        # パスワードを更新
         request.user.set_password(new_password)
         request.user.save()
-
-        # セッションを切らさないようにする
+        
         update_session_auth_hash(request, request.user)
 
-        messages.success(request, "パスワードを変更しました。")
+        messages.success(request, "パスワードを変更しました")
         return redirect("settings")
-    
     return render(request, 'diary/change_password.html')
 
 
@@ -86,18 +110,16 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
-            messages.success(request, "ログインしました！")
+            messages.success(request, "ログインしました")
             return redirect("home")  # ログイン後にカレンダー画面へ
         else:
-            messages.error(request, "ユーザー名またはパスワードが間違っています。")
-
+            messages.error(request, "ユーザー名またはパスワードが間違っています")
     return render(request, "diary/login.html")
 
 
 #ログイン後操作可
 @login_required
 def calendar_view(request):
-    # 年月の決定
     year = request.GET.get('year')
     month = request.GET.get('month')
 
@@ -109,7 +131,7 @@ def calendar_view(request):
         year = today.year
         month = today.month
 
-    # 月曜始まりカレンダー（週ごとの2次元）
+    # 月曜始まり
     cal = calendar.Calendar(firstweekday=0)
     month_days = cal.monthdatescalendar(year, month)
 
@@ -134,8 +156,8 @@ def calendar_view(request):
 
     records_by_date = {
         r["date"].isoformat(): {
-            "color": r["mood__color"],    # 例: "red"
-            "photo": r["photo"],          # 例: "photos/2025/09/xxx.jpg" or None
+            "color": r["mood__color"],   
+            "photo": r["photo"], 
         }
         for r in records
     }
@@ -193,9 +215,9 @@ def record_view(request, selected_date=None):
                 if existing.photo:
                     existing.photo.delete(save=False)
                 existing.delete()
-                messages.success(request, "記録を削除しました。")
+                messages.success(request, "記録を削除しました")
             else:
-                messages.info(request, "削除対象の記録はありません。")
+                messages.info(request, "削除する記録はありません")
             return redirect("calendar")
 
         # ★ 写真削除処理（モーダルからのPOST）
@@ -204,23 +226,52 @@ def record_view(request, selected_date=None):
                 existing.photo.delete(save=False)
                 existing.photo = None
                 existing.save(update_fields=["photo"])
-                messages.success(request, "写真を削除しました！")
-            return redirect("record_with_date", selected_date=initial_date.isoformat())
+                messages.success(request, "写真を削除しました")
+            # initial_date が None の場合に isoformat() で落ちないように分岐
+            if initial_date:
+                return redirect("record_with_date", selected_date=initial_date.isoformat())
+            else:
+                return redirect("record")
 
         # ★ 通常の保存処理
         form = RecordForm(request.POST, request.FILES, instance=existing)
+
+        # ① ブラウザ検証を使わずサーバ側で“日付未入力”を検出
+        post_date_str = (request.POST.get("date") or "").strip()
+        if not post_date_str:
+            messages.error(request, "日付を入力してください")
+            # ★ redirect せず、そのまま再描画（入力保持）
+            selected_mood_id = request.POST.get("mood") or None
+            return render(request, "diary/record.html", {
+                "form": form,                      # ← POSTでバインド済み：入力が残る
+                "moods": moods,
+                "selected_mood_id": selected_mood_id,
+                "has_record": bool(existing),
+                "display_date": initial_date,
+            })
+
         if form.is_valid():
             data = form.cleaned_data
-            save_date = data.get("date") or initial_date or dt_date.today()
+            save_date = data.get("date")
+            if not save_date:
+                messages.error(request, "日付を入力してください")
+                selected_mood_id = request.POST.get("mood") or None
+                return render(request, "diary/record.html", {
+                    "form": form,
+                    "moods": moods,
+                    "selected_mood_id": selected_mood_id,
+                    "has_record": bool(existing),
+                    "display_date": initial_date,
+                })
 
             mood_value = data.get("mood")
-            note_value = data.get("note", "").strip()
-            uploaded = data.get("photo")
-            removing = bool(request.POST.get("remove_photo"))
+            note_value = (data.get("note") or "").strip()
+            uploaded   = data.get("photo")
+            removing   = bool(request.POST.get("remove_photo"))
 
-            # バリデーション
+            # ③ 既存バリデーション：気分/メモ/写真のいずれか必須
             if not mood_value and not note_value and not (uploaded or (existing and existing.photo and not removing)):
-                messages.error(request, "気分・メモ・写真のいずれか1つは入力してください。")
+                messages.error(request, "気分・メモ・写真のいずれか1つは入力してください")
                 return redirect("record_with_date", selected_date=save_date.isoformat())
 
             # 写真の決定ロジック
@@ -243,8 +294,9 @@ def record_view(request, selected_date=None):
                     "photo": photo_value,
                 }
             )
-            messages.success(request, "記録を保存しました！")
+            messages.success(request, "記録を保存しました")
             return redirect("calendar")
+
     else:
         form = RecordForm(instance=existing) if existing else RecordForm(initial={"date": initial_date})
 
@@ -269,7 +321,7 @@ def record_delete(request, pk):
     if record.photo:
         record.photo.delete(save=False)
     record.delete()
-    messages.success(request, "記録を削除しました。")
+    messages.success(request, "記録を削除しました")
     return redirect("calendar")
 
 @login_required
@@ -279,11 +331,10 @@ def photo_delete(request, pk):
         record.photo.delete(save=False)
         record.photo = None
         record.save()
-        messages.success(request, "写真を削除しました。")
+        messages.success(request, "写真を削除しました")
     else:
-        messages.info(request, "削除できる写真がありません。")
+        messages.info(request, "削除できる写真がありません")
     return redirect("calendar")  # ★ カレンダーに戻す
-
 
 
 @login_required
@@ -291,42 +342,42 @@ def settings_view(request):
     return render(request, "diary/settings.html")
 
 
-#ログアウト機能
 def logout_view(request):
     logout(request)
-    messages.success(request, "ログアウトしました！")
+    messages.success(request, "ログアウトしました")
     return redirect("login")  # ログアウト後はログイン画面へ
 
-#新規ユーザー登録
+
 def signup_view(request):
     if request.method == "POST":
-        username = request.POST.get("username")
-        email = request.POST.get("email")
-        password = request.POST.get("password")
-        confirm_password = request.POST.get("confirm_password")
+        username = request.POST.get("username", "").strip()
+        email = request.POST.get("email", "").strip()
+        password = request.POST.get("password", "").strip()
+        confirm_password = request.POST.get("confirm_password", "").strip()
 
-        # パスワード一致チェック
+        # 入力チェック
+        if not username or not email or not password or not confirm_password:
+            messages.error(request, "すべての項目を入力してください")
+            return redirect("signup")
+
         if password != confirm_password:
-            messages.error(request, "パスワードが一致しません。")
+            messages.error(request, "パスワードが一致しません")
             return redirect("signup")
 
-        # ユーザー名の重複チェック
         if User.objects.filter(username=username).exists():
-            messages.error(request, "このユーザー名は既に使用されています。")
+            messages.error(request, "このユーザー名は既に使用されています")
             return redirect("signup")
 
-        # メールアドレスの重複チェック
         if User.objects.filter(email=email).exists():
-            messages.error(request, "このメールアドレスは既に使用されています。")
+            messages.error(request, "このメールアドレスは既に使用されています")
             return redirect("signup")
 
         # ユーザー作成
         user = User.objects.create_user(username=username, email=email, password=password)
         user.save()
 
-        # 自動ログイン
         login(request, user)
-        messages.success(request, "アカウントを作成しました！")
+        messages.success(request, "アカウントを作成しました")
         return redirect("home")
 
     return render(request, "diary/signup.html")

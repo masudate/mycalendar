@@ -1,18 +1,26 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2 class="record-title">ユーザー名を変更する</h2>
+
+<h2 class="record-title">ユーザー名変更</h2>
 
 <form method="post" class="settings-form">
   {% csrf_token %}
 
   <div class="form-row">
-    <label for="username">新しいユーザー名</label>
-    <input type="text" id="username" name="username" value="{{ user.username }}" required>
+    <label for="current_username">現在のユーザー名</label>
+    <input type="text" id="current_username"
+          value="{{ user.username }}" readonly disabled>
+  </div>
+
+  <div class="form-row">
+    <label for="new_username">新しいユーザー名</label>
+    <input type="text" id="new_username" name="new_username">
   </div>
 
   <div class="button-row">
-    <button type="submit" class="btn btn-primary">保存する</button>
+    <button type="submit" class="btn btn-primary">保存</button>
     <a href="{% url 'settings' %}" class="btn btn-secondary">キャンセル</a>
   </div>
 </form>
+
 {% endblock %}

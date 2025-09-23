@@ -306,6 +306,49 @@
         color: #c33e3e;
     }
 
+    /* === ボタンサイズ統一オーバーライド（base.html の <style> の一番最後に追記） === */
+    .btn,
+    .btn-primary,
+    .btn-danger,
+    .btn-secondary,
+    .btn-danger-outline,
+    .filebtn {
+        /* サイズ系は全て共通 */
+        padding: 10px 16px !important;
+        min-width: 100px !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        box-sizing: border-box;
+        border-radius: 8px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        text-decoration: none; /* 通常は下線なし */
+    }
+
+    /* アウトラインの見た目だけ維持（サイズは上で統一） */
+    .btn-danger-outline {
+        background: #fff !important;
+        color: #d34f4f !important;
+        border: 1px solid #e3a0a0 !important;
+    }
+    .btn-danger-outline:hover {
+        background: #fff5f5 !important;
+        border-color: #d97b7b !important;
+        color: #c33e3e !important;
+    }
+
+    /* 「写真変更」ラベル用（色味は従来っぽく） */
+    .filebtn {
+        background: #f3f4f6 !important;
+        border: 1px solid #ddd !important;
+        cursor: pointer;
+    }
+
+    /* .btn にあるホバー下線を filebtn にも適用して統一 */
+    .filebtn:hover { text-decoration: underline; }
+
+
     /* 共通：ボタン行（中央寄せ） */
     .button-row {
         display: flex;
@@ -363,7 +406,7 @@
         flex-direction:column;
         gap:6px;
         margin:12px 0;
-        align-items:center;      /* 行（ラベル＋入力）を中央に寄せる */
+        align-items:center; /* 行（ラベル＋入力）を中央に寄せる */
     }
 
     /* ラベルと入力欄は“行の中”で中央に置きつつ、見出しは左寄せを維持 */
@@ -371,7 +414,7 @@
         width:100%;
         max-width:480px;
         font-weight:600;
-        text-align:left;         /* タイトル文字は左寄せのまま */
+        text-align:left; /* タイトル文字は左寄せのまま */
     }
 
     .settings-form input[type="text"],
@@ -379,7 +422,7 @@
     .settings-form input[type="password"],
     .settings-form textarea{
         width:100%;
-        max-width:480px;         /* 入力欄の実幅も中央に */
+        max-width:480px; /* 入力欄の実幅も中央に */
         height:40px;
         font-size:16px;
         padding:8px 10px;
@@ -398,6 +441,17 @@
         gap:12px;
         margin-top:16px;
     }
+
+    /* === ヘッダー固定 === */
+    header {
+        position: sticky;   /* 画面上部に固定 */
+        top: 0;
+        z-index: 1000;      /* モーダル等より上にしたいなら値を上げる */
+        box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+
+    #photo-preview-wrap { all: unset !important; display: none !important; }
+
     </style>
 
 </head>

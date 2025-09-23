@@ -4,7 +4,7 @@
   <h2>この記録を削除しますか？</h2>
   <form method="post">
     {% csrf_token %}
-    <button type="submit" class="btn btn-danger">削除する</button>
+    <button type="submit" class="btn btn-danger">削除</button>
     <a href="{% url 'calendar' %}" class="btn btn-secondary">キャンセル</a>
   </form>
 {% endblock %}

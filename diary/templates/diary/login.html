@@ -1,24 +1,23 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>ログイン</h2>
+<h2 class="record-title">ログイン</h2>
 
-<form method="post">
+<form method="post" class="settings-form">
     {% csrf_token %}
-    <div style="margin-bottom: 10px;">
-        <label for="username">ユーザー名：</label>
-        <input type="text" id="username" name="username" required>
+    <div class="form-row">
+        <label for="username">ユーザー名</label>
+        <input type="text" id="username" name="username">
     </div>
 
-    <div style="margin-bottom: 10px;">
-        <label for="password">パスワード：</label>
-        <input type="password" id="password" name="password" required>
+    <div class="form-row">
+        <label for="password">パスワード</label>
+        <input type="password" id="password" name="password">
     </div>
 
-    <button type="submit">ログイン</button>
-
-    <p style="margin-top: 15px;">
-      <a href="{% url 'signup' %}" style="text-decoration: underline; color: blue;">新規ユーザー登録へ</a>
-    </p>
+    <div class="button-row">
+        <button type="submit" class="btn btn-primary">ログイン</button>
+        <a href="{% url 'signup' %}" class="btn btn-secondary">新規ユーザー登録</a>
+    </div>
 </form>
 {% endblock %}
