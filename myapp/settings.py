@@ -20,12 +20,12 @@ DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
 
 # デプロイ先のドメイン/ホストを環境変数で列挙（カンマ区切り）
 # 例: "your-app.onrender.com,www.example.com"
-ALLOWED_HOSTS = [h for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h]
+ALLOWED_HOSTS = ['masudate.pythonanywhere.com']
 
 # CSRF許可オリジン（httpsスキーム付き、カンマ区切り）
 # 例: "https://your-app.onrender.com,https://www.example.com"
 _csrf_env = os.getenv("CSRF_TRUSTED_ORIGINS", "")
-CSRF_TRUSTED_ORIGINS = [o for o in _csrf_env.split(",") if o]  # 空なら[]（ローカルでは不要）
+CSRF_TRUSTED_ORIGINS = ["https://masudate.pythonanywhere.com"]
 
 # 逆プロキシ越しのHTTPSを認識（Render/Heroku/Nginx/Cloudflare等）
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
