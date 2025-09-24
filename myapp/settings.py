@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -134,3 +136,54 @@ LOGIN_URL = 'login'
 # 画像配信用（開発環境）
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# --- セッション有効期限設定 ---
+# 変更可
+SESSION_COOKIE_AGE = 60 * 60 * 2 # 2h
+
+# ブラウザ閉じても期限まで有効（閉じたら消したいなら True）
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# アクセスのたびに有効期限延長
+SESSION_SAVE_EVERY_REQUEST = True
+
+# --- セキュアクッキーは本番(HTTPS)でON、開発(HTTP)ではOFF ---
+if DEBUG:
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+else:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+
+SESSION_COOKIE_SAMESITE = "Lax"
+
+SECURE_PROXY_SSL_HEADER = (
+    "HTTP_X_FORWARDED_PROTO", 
+    "https"
+)
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://example.com", 
+    "https://www.example.com"
+]
+
+
+#本番環境ではFalseにする
+DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
+
+#本番ドメイン/ホスト設定
+#例: Renderなら "your-app.onrender.com" / Vercelなら "your-app.vercel.app"
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
+#CSRF（https 付きで記載）
+CSRF_TRUSTED_ORIGINS = [
+    # "https://your-app.onrender.com",
+    # "https://yourdomain.com",
+]
+
+#逆プロキシ経由HTTPSのとき（Render/Heroku等）有効化する
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+#collectstatic 用（静的ファイルを1箇所に集める）
+STATIC_ROOT = BASE_DIR / "staticfiles"
