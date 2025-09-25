@@ -62,7 +62,7 @@
         <input type="file" id="photo-input" name="photo" accept="image/*">
 
         <!-- 新規選択プレビュー（初期は非表示） -->
-        <div id="photo-preview-wrap" aria-hidden="true" style="display:none;background:transparent;border:0;padding:0;box-shadow:none;outline:0;">
+        <div id="photo-preview-wrap" class="record-preview" aria-hidden="true" style="display:none;background:transparent;border:0;padding:0;box-shadow:none;outline:0;">
           <div class="photo-preview-title" style="font-size:12px;color:#555;display:none;">写真プレビュー</div>
 
           <!-- プレビュー画像（枠ゼロ・角丸のみ） -->
@@ -155,7 +155,7 @@
 /* ---- レイアウト ---- */
 .top-grid { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 8px; }
 
-/* 1カラム時（写真未登録）は左基準→後で中央に戻す */
+/* 1カラム時（写真未登録）は左基準 → 後で中央に戻す */
 .single-col { display: flex; flex-direction: column; align-items: stretch; gap: 16px; }
 .left-col  { flex: 0 0 var(--field-width, 520px); max-width: var(--field-width, 520px); }
 .right-col { flex: 0 0 auto; }
@@ -167,66 +167,31 @@
 
 /* フィールド共通 */
 input[type="date"], #mood { height: 40px; box-sizing: border-box; }
+
+/* 気分セレクト（サイズ） */
 #mood { font-size: 20px; text-align: center; }
 #mood option { font-size: 30px; }
 #mood option[value=""] { font-size: 20px; }
+
+/* メモ↔写真の縦間隔を詰める */
 .left-col .form-row:last-of-type { margin-bottom: 8px; }
 
-/* 右カラムの既存写真 */
+/* 右カラム：既存写真の見た目 */
 .current-photo .cp-title { font-size:12px; color:#555; margin-bottom:6px; }
-.current-photo .cp-img { width: 480px; max-width: 90vw; height: 320px; object-fit: cover; border-radius: 8px; display: block; }
+.current-photo .cp-img {
+  width: 480px; max-width: 90vw; height: 320px;
+  object-fit: cover; border-radius: 8px; display: block;
+}
 
-/* 写真操作ボタン */
+/* 写真操作ボタン（右/左どちらでも共通） */
 .photo-actions { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
 
-/* 下部のアクションボタン列 */
+/* 下部のアクションボタン列（保存／記録削除） */
 .button-row { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 16px; }
 
-/* ==== 新規選択プレビュー（枠ゼロ方針） ==== */
-/* まず“枠の原因”を根こそぎリセット → 必要な見た目だけ再指定 */
-.record-preview#photo-preview-wrap {
-  all: unset !important;          /* これで継承/既存/UAの枠や背景を完全リセット */
-  display: none !important;       /* 初期は非表示（JSで is-open を付ける） */
-  margin-top: 8px;                /* 余白だけ足す */
-}
-.record-preview#photo-preview-wrap.is-open {
-  display: inline-flex !important;
-  flex-direction: column;
-  align-items: flex-start;
-}
-/* タイトル：ファイル選択時だけ表示 */
-.record-preview .photo-preview-title { display: none; font-size: 12px; color: #555; }
-.record-preview.is-open .photo-preview-title { display: block; }
-
-/* 画像：src がある時だけ描画。枠/影/アウトライン一切なし */
-#photo-preview {
-  display: none;
-  max-width: 240px; max-height: 160px; object-fit: cover; border-radius: 6px;
-  border: none !important; outline: none !important; box-shadow: none !important; background: transparent !important;
-}
-#photo-preview[src] { display: block; }
-
-/* ボタン列：選択後だけ表示（左寄せ・写真直下） */
-.record-preview .photo-actions { display: none; }
-.record-preview.is-open .photo-actions {
-  display: flex; justify-content: flex-start; align-items: center; gap: 12px; margin-top: 8px;
-}
+/* ==== 新規選択プレビュー（枠ゼロ & 左寄せ） ==== */
 
 /* 写真入力行の子要素は左端で揃える（プレビューは左下に寄せる） */
-.photo-create-row { align-items: flex-start; }
-.photo-create-row > label,
-.photo-create-row > #photo-input,
-.photo-create-row > #photo-preview-wrap,
-.photo-create-row > #photo-new-actions { align-self: flex-start; margin-left: 0; text-align: left; }
-
-/* === 全体を中央寄せに戻す（プレビューは左寄せのまま） === */
-.single-col { align-items: center !important; }
-.single-col .left-col { align-self: center !important; display: flex; flex-direction: column; align-items: stretch !important; }
-.single-col .left-col .form-row { width: 100%; max-width: var(--field-width, 520px); }
-
-/* ========= 画像プレビュー（枠ゼロ）& 位置固定 ========= */
-
-/* 位置は“写真の直下・左寄せ”（全体は中央寄せのまま） */
 .photo-create-row { align-items: flex-start !important; }
 .photo-create-row > label,
 .photo-create-row > #photo-input,
@@ -237,8 +202,9 @@ input[type="date"], #mood { height: 40px; box-sizing: border-box; }
   text-align: left !important;
 }
 
-/* 枠ゼロ徹底 */
+/* 初期は完全非表示（JSで .is-open を付けた時だけ出す） */
 #photo-preview-wrap {
+  display: none !important;
   background: transparent !important;
   border: 0 !important;
   padding: 0 !important;
@@ -247,20 +213,33 @@ input[type="date"], #mood { height: 40px; box-sizing: border-box; }
   margin-top: 8px;
 }
 
-/* 未選択は全て非表示 */
-#photo-preview-wrap:not(.is-open) { display: none !important; }
-#photo-preview { display: none !important; }
-#photo-new-actions { display: none !important; }
-.photo-preview-title { display: none !important; }
-
-/* 選択後のみ表示（左寄せ・縦並び） */
+/* 画像選択後にだけ表示（縦並び・左寄せ） */
 #photo-preview-wrap.is-open {
   display: inline-flex !important;
   flex-direction: column !important;
   align-items: flex-start !important;
 }
-#photo-preview[src] { display: block !important; }
+
+/* タイトルは選択後のみ表示 */
+.photo-preview-title { display: none !important; font-size: 12px; color: #555; }
 #photo-preview-wrap.is-open .photo-preview-title { display: block !important; }
+
+/* 画像は src が付いた時だけ表示。枠/影/アウトラインを完全に無効化 */
+#photo-preview {
+  display: none !important;
+  max-width: 240px;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+#photo-preview[src] { display: block !important; }
+
+/* ボタン行は選択後だけ表示（左寄せ） */
+#photo-new-actions { display: none !important; }
 #photo-preview-wrap.is-open #photo-new-actions {
   display: flex !important;
   gap: 12px !important;
@@ -268,7 +247,20 @@ input[type="date"], #mood { height: 40px; box-sizing: border-box; }
   justify-content: flex-start !important;
 }
 
+/* === 全体を中央寄せに戻す（プレビューは左寄せのまま） === */
+.single-col { align-items: center !important; }
+.single-col .left-col { align-self: center !important; display: flex; flex-direction: column; align-items: stretch !important; }
+.single-col .left-col .form-row { width: 100%; max-width: var(--field-width, 520px); }
 </style>
+
+
+
+{% if reset_photo %}
+<script>window.RESET_UPLOAD = true;</script>
+{% else %}
+<script>window.RESET_UPLOAD = false;</script>
+{% endif %}
+
 
 
 <!-- =========================
@@ -277,54 +269,52 @@ input[type="date"], #mood { height: 40px; box-sizing: border-box; }
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   /* ================================
-   * 5-1) 写真プレビュー（未登録→新規選択時）
-   * ================================ */
-  const input     = document.getElementById("photo-input");        // name="photo" の file input（送信用）
-  const wrap      = document.getElementById("photo-preview-wrap"); // プレビュー用コンテナ
-  const img       = document.getElementById("photo-preview");      // プレビュー画像
-  const actions   = document.getElementById("photo-new-actions");  // 「写真削除 / 写真変更」ボタン行
-  const removeBtn = document.getElementById("btn-remove-photo");   // 写真削除ボタン
-  const reselect  = document.getElementById("photo-reselect");     // 写真変更（name なし）
+ * 5-1) 写真プレビュー（未登録→新規選択時）
+ * ================================ */
+  const input     = document.getElementById("photo-input");
+  const wrap      = document.getElementById("photo-preview-wrap");
+  const img       = document.getElementById("photo-preview");
+  const actions   = document.getElementById("photo-new-actions");
+  const removeBtn = document.getElementById("btn-remove-photo");
+  const reselect  = document.getElementById("photo-reselect");
 
-  // ▼ 開く（ファイルがある時だけ）
-  const openPreview = (file) => {
-    if (!file) return closePreview();
-    if (img) {
-      img.src = URL.createObjectURL(file);
-      // CSS側で #photo-preview[src] { display:block; } にしているが、
-      // 念のため inline 指定が残っていたら外す
-      img.style.removeProperty("display");
-    }
-    if (wrap) {
-      wrap.classList.add("is-open");            // 枠を開く（タイトル・画像・ボタンをまとめて表示）
-      wrap.setAttribute("aria-hidden", "false");
-      wrap.style.removeProperty("display");     // 過去の inline style を打ち消し
-    }
-    if (actions) actions.style.removeProperty("display");
-    if (input)  input.style.display = "none";   // ブラウザのファイル名UIは隠す
-  };
-
-  // ▼ 閉じる（ファイルが無い時）
   const closePreview = () => {
     if (img) {
-      img.removeAttribute("src"); // CSSで src 無しの時は非表示
-      img.style.removeProperty("display");
+      img.removeAttribute("src");
     }
     if (wrap) {
       wrap.classList.remove("is-open");
       wrap.setAttribute("aria-hidden", "true");
-      wrap.style.display = "none"; // 枠ごと消す（“枠だけ表示”を防ぐ）
+      wrap.style.removeProperty("display");
     }
-    if (actions) actions.style.display = "none";
-    if (input)  input.style.display = "block";
+    if (actions) actions.style.removeProperty("display");
+    if (input) input.style.display = "block";
   };
 
-  // 初期状態：必ず一度閉じる → ブラウザが file を保持していれば開く
+  const openPreview = (file) => {
+    if (!file) return closePreview();
+    if (img) {
+      img.src = URL.createObjectURL(file);
+    }
+    if (wrap) {
+      wrap.classList.add("is-open");
+      wrap.setAttribute("aria-hidden", "false");
+      wrap.style.removeProperty("display");
+    }
+    if (actions) actions.style.removeProperty("display");
+    if (input) input.style.display = "none";
+  };
+
+  if (window.RESET_UPLOAD) {
+    if (input) input.value = "";
+    if (reselect) reselect.value = "";
+    closePreview();
+  }
+
   if (wrap) closePreview();
   const initialFile = (input && input.files && input.files[0]) ? input.files[0] : null;
   if (initialFile) openPreview(initialFile);
 
-  // ファイル選択/変更
   if (input) {
     input.addEventListener("change", () => {
       const file = (input.files && input.files[0]) ? input.files[0] : null;
@@ -333,7 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 「写真削除」：全部クリアして閉じる
+  // 写真削除：全部クリア、閉じる
   if (removeBtn) {
     removeBtn.addEventListener("click", () => {
       if (input)    input.value = "";
@@ -342,17 +332,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 「写真変更」：選び直し → #photo-input に移して開く
+  // 写真変更
   if (reselect) {
     reselect.addEventListener("change", () => {
       const file = (reselect.files && reselect.files[0]) ? reselect.files[0] : null;
       if (!file || !input) return;
       const dt = new DataTransfer();
       dt.items.add(file);
-      input.files = dt.files;   // 送信されるのは #photo-input のみ
+      input.files = dt.files; 
       openPreview(file);
     });
   }
+
 
   /* ================================
    * 5-2) 気分セレクト：色反映

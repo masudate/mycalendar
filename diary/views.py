@@ -233,21 +233,25 @@ def record_view(request, selected_date=None):
             else:
                 return redirect("record")
 
-        # ★ 通常の保存処理
+        # 通常の保存処理
         form = RecordForm(request.POST, request.FILES, instance=existing)
 
-        # ① ブラウザ検証を使わずサーバ側で“日付未入力”を検出
+        # “日付未入力”を検出
         post_date_str = (request.POST.get("date") or "").strip()
         if not post_date_str:
             messages.error(request, "日付を入力してください")
-            # ★ redirect せず、そのまま再描画（入力保持）
+            
+            form = RecordForm(request.POST, instance=existing)
+            
+            # 入力保持
             selected_mood_id = request.POST.get("mood") or None
             return render(request, "diary/record.html", {
-                "form": form,                      # ← POSTでバインド済み：入力が残る
+                "form": form,  
                 "moods": moods,
                 "selected_mood_id": selected_mood_id,
                 "has_record": bool(existing),
                 "display_date": initial_date,
+                "reset_photo": True, 
             })
 
         if form.is_valid():
@@ -262,6 +266,7 @@ def record_view(request, selected_date=None):
                     "selected_mood_id": selected_mood_id,
                     "has_record": bool(existing),
                     "display_date": initial_date,
+                    "reset_photo": False,
                 })
 
             mood_value = data.get("mood")
