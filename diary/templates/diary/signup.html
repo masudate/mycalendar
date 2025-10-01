@@ -3,34 +3,68 @@
 
 {% block content %}
 <div class="form-container">
-  <h2 class="record-title">新規ユーザー登録</h2>
+    <h2 class="record-title">ジブンカレンダー</h2>
 
-  <form method="post" class="settings-form">
-      {% csrf_token %}
-      <div class="form-row">
-          <label for="username">ユーザー名</label>
-          <input type="text" name="username">
-      </div>
+    <form method="post" class="settings-form" novalidate>
+        {% csrf_token %}
+        <div class="form-row">
+            <label for="username">ユーザー名</label>
+            <input type="text" name="username">
+        </div>
 
-      <div class="form-row">
-          <label for="email">メールアドレス</label>
-          <input type="email" name="email">
-      </div>
+        <div class="form-row">
+            <label for="email">メールアドレス</label>
+            <input type="email" name="email">
+        </div>
 
-      <div class="form-row">
-          <label for="password">パスワード</label>
-          <input type="password" name="password">
-      </div>
+        <div class="form-row">
+            <label for="password">パスワード</label>
+            <input type="password" name="password">
+        </div>
 
-      <div class="form-row">
-          <label for="confirm_password">パスワード（確認）</label>
-          <input type="password" name="confirm_password">
-      </div>
+        <div class="form-row">
+            <label for="confirm_password">パスワード（確認）</label>
+            <input type="password" name="confirm_password">
+            <ul class="helptext">
+                <li>8文字以上にしてください</li>
+                <li>英字と数字をそれぞれ1文字以上含めてください</li>
+                <li>よく使われるパスワードは使用できません</li>
+            </ul>
+        </div>
 
-      <div class="button-row">
-          <button type="submit" class="btn btn-primary">登録</button>
-          <a href="{% url 'login' %}" class="btn btn-secondary">ログイン</a>
-      </div>
-  </form>
+        <div class="auth-actions">
+            <button type="submit" class="btn btn-primary auth-submit">登録</button>
+            <div class="auth-links">
+                <a href="{% url 'login' %}">ログイン</a>
+            </div>
+        </div>
+    </form>
+
+    <style>
+    .auth-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+
+    .auth-actions .auth-submit {
+        width: auto !important;      /* ← baseの width:100% を確実に無効化 */
+        display: inline-block !important; /* ← baseで block 指定されていても解除 */
+        padding: 8px 12px;
+        align-self: center;
+    }
+
+    .auth-links { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 6px; 
+        align-items: center; }
+
+    .auth-links a {
+        text-decoration: underline;
+        color: #484747ff;
+        padding: 0 !important;
+        border: none !important;
+        background: none !important;
+    }
+    .auth-links a:hover { opacity: 0.8; }
+    </style>
+
 </div>
 {% endblock %}

@@ -2,13 +2,13 @@
 {% block site_header %}{% endblock %}
 
 {% block content %}
-<h2 class="record-title">ログイン</h2>
+<h2 class="record-title">ジブンカレンダー</h2>
 
-<form method="post" class="settings-form">
+<form method="post" class="settings-form" novalidate>
     {% csrf_token %}
     <div class="form-row">
-        <label for="username">ユーザー名</label>
-        <input type="text" id="username" name="username">
+        <label for="username">メールアドレス</label>
+        <input type="email" id="username" name="username" placeholder="you@example.com" autocomplete="email">
     </div>
 
     <div class="form-row">
@@ -16,9 +16,39 @@
         <input type="password" id="password" name="password">
     </div>
 
-    <div class="button-row">
-        <button type="submit" class="btn btn-primary">ログイン</button>
-        <a href="{% url 'signup' %}" class="btn btn-secondary">新規ユーザー登録</a>
+    <div class="auth-actions">
+        <button type="submit" class="btn btn-primary auth-submit">ログイン</button>
+        <div class="auth-links">
+            <a href="{% url 'signup' %}">新規ユーザー登録</a>
+        </div>
     </div>
 </form>
+
+<style>
+.auth-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+
+.auth-actions .auth-submit {
+    width: auto !important;      /* ← baseの width:100% を確実に無効化 */
+    display: inline-block !important; /* ← baseで block 指定されていても解除 */
+    padding: 8px 12px;
+    align-self: center;
+}
+
+.auth-links { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 6px; 
+    align-items: center; }
+
+.auth-links a {
+    text-decoration: underline;
+    color: #333;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+}
+.auth-links a:hover { opacity: 0.8; }
+</style>
+
+
 {% endblock %}

@@ -86,16 +86,21 @@ DATABASES = {
 # 認証
 # =========================
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {"NAME": "diary.validators.AlphaNumericCombinationValidator"},  # 追加
 ]
 
 LANGUAGE_CODE = "ja"
 TIME_ZONE = "Asia/Tokyo"
 USE_I18N = True
 USE_TZ = True
+
+AUTHENTICATION_BACKENDS = [
+    "diary.auth_backends.EmailBackend", 
+]
+
 
 # =========================
 # 静的/メディア
@@ -120,7 +125,7 @@ LOGIN_URL = "login"
 # =========================
 # セッション
 # =========================
-SESSION_COOKIE_AGE = 60 * 60 * 2         # 2時間
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 14         # 2週間
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # ブラウザを閉じても期限までは維持
 SESSION_SAVE_EVERY_REQUEST = True        # アクセスの度に延長
 SESSION_COOKIE_SAMESITE = "Lax"

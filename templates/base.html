@@ -2,6 +2,8 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>ジブンカレンダー</title>
 
     <style>
@@ -12,12 +14,10 @@
         margin: 0;
         font-family: sans-serif;
     }
-
     header {
         background-color: #B0E0E6; /* 薄めの水色 */
         padding: 10px 20px;
     }
-
     nav ul {
         display: flex;
         list-style: none;
@@ -26,30 +26,24 @@
         width: 100%;
         align-items: center;
     }
-
     nav li {
         color: white;
-        flex: 1 1 0;
         text-align: center;
     }
-
     nav a {
         color: white;
         text-decoration: none;
         font-weight: bold;
         font-size: 20px; /* ヘッダーの文字サイズ */
     }
-
     nav a:hover { text-decoration: underline; }
-
     nav li strong {
-        font-size: 25px;
+        font-size: inherit;
         color: white;
         border: 2px solid white;
         padding: 5px 10px;
         border-radius: 8px;
     }
-
     .help {
         display: inline-block;
         width: 20px;
@@ -62,13 +56,36 @@
         font-weight: bold;
         margin-left: 5px;
     }
-
     /* 共通ページタイトル（記録・設定など） */
-    :root { --title-offset: 16px; } /* ここを 12〜24px で微調整OK */
-    .record-title{
-    text-align: center;
-    margin: var(--title-offset) 0 12px; /* 上に少し余白を追加 */
+    :root{
+        --title-min: 16px;
+        --title-max: 30px;
+        --title-offset: 12px; /* ページ見出しの上余白。12〜24pxで微調整OK */
+        --header-h: 60px;   /* ← ヘッダー全体の高さ */
+        --title-h: 36px;    /* ← タイトル枠の縦の高さ */
+        --title-pad-x: 8px; /* タイトル枠の左右余白 */
+        --title-box: 180px;      /* 通常時のタイトル枠の“横幅” */
+        --title-box-sm: 80px;   /* 中画面（～900px）での枠幅 */
+        --title-box-xs: 40px;   /* 狭い画面（～560px）での枠幅 */
     }
+
+    .record-title{
+        text-align: center;
+        margin: var(--title-offset) 0 12px; /* 上に余白を追加 */
+    }
+
+    /* ヘッダー外枠：横並びの土台 */
+    .site-header { padding: 10px 16px; box-sizing: border-box; }
+
+    .header-list > li{
+        text-align: center;
+    }
+
+    .header-list a{
+        display: inline-block; /* クリック範囲を確保 */
+        text-decoration: none;
+    }
+    .header-list a:hover { opacity: 0.85; }
 
     /* ===============================
     2) 気分セレクト専用
@@ -447,7 +464,6 @@
     }
     .app-header nav li {
         color: white;
-        flex: 1 1 0;
         text-align: center;
     }
     .app-header nav a {
@@ -458,7 +474,7 @@
     }
     .app-header nav a:hover { text-decoration: underline; }
     .app-header nav li strong {
-        font-size: 25px;
+        font-size: inherit;
         color: white;
         border: 2px solid white;
         padding: 5px 10px;
@@ -473,21 +489,172 @@
         box-shadow: 0 2px 8px rgba(0,0,0,.06);
     }
 
-    </style>
+    /* ── ヘッダーUL：1行固定・タイトルだけ縮む（4項目は常にフル表示） ── */
+    .app-header nav ul.header-list{
+        display: flex !important;   /* gridと競合しても必ずflexに */
+        flex-wrap: nowrap;          /* 折り返さない＝4リンクは常に見える */
+        align-items: center;
+        gap: 20px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        width: 100%;
+        overflow: hidden;           /* タイトルを省略…させるため必須 */
+    }
 
+    /* 4つのリンクは縮めない（幅確保＆1行死守） */
+    .app-header nav .header-list > li:not(.site-title){
+        flex: 0 0 auto;
+        white-space: nowrap;
+        text-align: center;
+    }
+    .app-header nav .header-list a{
+        display: inline-block;
+        color: white;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 20px;
+    }
+    .app-header nav .header-list a:hover{ 
+        text-decoration: underline; 
+    }
+
+    /* タイトルだけが余り幅を全部持ち、足りなければ省略…で縮む */
+    .site-title{ min-width: 0; }
+    .site-title > strong{
+        display: block;
+        line-height: 1.5; !important;
+        font-weight: 700;
+        font-size: clamp(var(--title-min), 2.2vw + 8px, var(--title-max));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;   /* ← 省略… */
+        padding: 2px 8px; !important;
+        border: 1px solid #fff;
+        border-radius: 8px;
+        margin-inline-end: 8px
+    }
+
+    /* 念のため：strongに固定サイズが来ても潰す */
+    nav li strong,
+    .app-header nav li strong{ 
+        font-size: inherit !important; }
+
+    /* すごく狭い画面はリンク文字をわずかに縮める（任意） */
+    @media (max-width: 420px){
+        .app-header nav .header-list a{ font-size: 0.95rem; }
+        .site-title > strong{ border-width: 1px; padding: 1px 4px; }
+    }
+
+    /* 全画面で“でかく見える”のは枠の余白のせいもあるので、広い画面だけ軽く締める */
+    @media (min-width: 1200px){
+        .app-header.sticky.site-header .header-list .site-title > strong{
+            padding: 2px 8px;      /* ← 余白を控えめに */
+            border-width: 1px;     /* ← 枠線も細く */
+        }
+    }
+
+    /* 4項目は優先表示：タイトル枠は固定サイズ（余り幅はもう使わない） */
+    .site-title{
+        flex: 0 1 var(--title-box);  /* ← これで枠の横幅を固定（最大でも --title-box） */
+        min-width: 120px;            /* ぎりぎりのときの下限（お好みで） */
+    }
+
+    /* 枠の中でテキストだけが省略…で調整される */
+    .site-title > strong{
+        display: block;
+        width: 100%;           /* 枠いっぱいを使う */
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.5;
+        font-weight: 700;
+        font-size: clamp(var(--title-min), 2.2vw + 8px, var(--title-max));
+        padding: 2px 6px;      /* ここは“固定値”なので枠の見た目は変化しない */
+        border: 1px solid #fff;
+        border-radius: 8px;
+    }
+
+    /* ULは1行flexを強制（念のため） */
+    .app-header nav ul.header-list{
+    display: flex !important;
+    flex-wrap: nowrap !important;   /* 折り返さず常時4リンクを表示 */
+    align-items: center;
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    width: 100%;
+    overflow: hidden;               /* タイトルを省略…させるため必須 */
+    }
+
+    /* 4つのリンクは縮めない（幅を確保） */
+    .app-header nav .header-list > li:not(.site-title){
+    flex: 0 0 auto !important;
+    white-space: nowrap;
+    text-align: center;
+    }
+
+    /* タイトル“枠”を固定幅にする（grow/shrink 0、basis=固定幅） */
+    .site-title{
+    flex: 0 0 var(--title-box) !important;
+    min-width: 0 !important;        /* 以前の下限（120px）を無効化 */
+    }
+
+    /* 中の文字は省略…で調整（枠は動かない） */
+    .site-title > strong{
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;        /* ← 省略… */
+    line-height: 1.5;
+    font-weight: 700;
+    font-size: clamp(var(--title-min), 2.2vw + 8px, var(--title-max));
+    padding: 2px 6px;               /* 見た目の高さは固定値で安定 */
+    border: 1px solid #fff;
+    border-radius: 8px;
+    }
+
+    /* 画面に応じて“枠幅”だけ段階的に調整（文字は常に省略で対応） */
+    @media (max-width: 900px){
+    .site-title{ flex-basis: var(--title-box-sm) !important; }
+    }
+    @media (max-width: 560px){
+    .site-title{ flex-basis: var(--title-box-xs) !important; }
+    }
+
+    /* === ヘッダー項目を中央揃え（グループごと中央）=== */
+    .app-header nav ul.header-list{
+    justify-content: center !important; /* ← 左寄せ→中央寄せに */
+    gap: 28px;                          /* 項目の間隔（お好みで調整） */
+    }
+
+    /* 念のため：各項目の中身も中央寄せ */
+    .app-header nav .header-list > li{
+    text-align: center !important;
+    }
+
+    /* タイトルボックス内の文字も中央に */
+    .site-title{ text-align: center !important; }
+
+    
+    </style>
 </head>
 
 
 <body>
     {% block site_header %}
-    <header class="app-header sticky">
+    <header class="app-header sticky site-header">
         <nav>
-            <ul>
-                <li><strong>ジブンカレンダー</strong></li>
-                <li><a href="{% url 'home' %}">カレンダー</a></li>
-                <li><a href="{% url 'record' %}">記録する</a></li>
-                <li><a href="{% url 'settings' %}">設定</a></li>
-                <li><a href="{% url 'logout' %}" id="logout-link">ログアウト</a></li>
+            <ul class="header-list">
+            <li class="site-title"><strong>ジブンカレンダー</strong></li>
+            <li><a href="{% url 'home' %}">カレンダー</a></li>
+            <li><a href="{% url 'record' %}">記録する</a></li>
+            <li><a href="{% url 'settings' %}">設定</a></li>
+            <li><a href="{% url 'logout' %}" id="logout-link">ログアウト</a></li>
             </ul>
         </nav>
     </header>
@@ -513,7 +680,7 @@
         <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="logout-title">
             <h3 id="logout-title" class="modal-title">ログアウトしますか？</h3>
             <div class="modal-actions">
-                <button type="button" class="btn btn-primary" id="confirm-logout">ログアウト</button>
+                <button type="button" class="btn btn-danger" id="confirm-logout">ログアウト</button>
                 <button type="button" class="btn btn-secondary" data-dismiss>キャンセル</button>
             </div>
         </div>

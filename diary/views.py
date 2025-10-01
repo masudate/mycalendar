@@ -3,10 +3,11 @@ from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash, authenticate, login, logout
 from django.contrib.auth.models import User
+from django.contrib.auth.hashers import check_password
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.password_validation import validate_password
 from django.db.models import Case, When, IntegerField
-from django.views.generic import DeleteView
-from django.urls import reverse_lazy
+from django.core.exceptions import ValidationError
 from datetime import date, timedelta
 from datetime import date as dt_date
 import calendar
@@ -15,15 +16,14 @@ from .models import Record, Mood
 import re
 
 
+@login_required
 def change_username(request):
     if request.method == "POST":
         new_username = (request.POST.get("new_username") or "").strip()
         if not new_username:
             messages.error(request, "新しいユーザー名を入力してください")
-        # 変更がない場合
         elif new_username == request.user.username:
             messages.error(request, "現在のユーザー名と同じです")
-        # 重複チェック（自分以外）
         elif User.objects.filter(username=new_username).exclude(pk=request.user.pk).exists():
             messages.error(request, "このユーザー名は既に使用されています")
         else:
@@ -33,7 +33,7 @@ def change_username(request):
             return redirect("settings")
     return render(request, "diary/change_username.html")
 
-
+@login_required
 def change_email(request):
     if request.method == "POST":
         new_email     = (request.POST.get("new_email") or "").strip()
@@ -61,7 +61,7 @@ def change_email(request):
             return redirect("settings")
     return render(request, "diary/change_email.html")
 
-
+@login_required
 def change_password(request):
     if request.method == "POST":
         current_password = request.POST.get("current_password", "").strip()
@@ -83,8 +83,11 @@ def change_password(request):
         if not new_password:
             messages.error(request, "新しいパスワードを入力してください")
             return redirect("change_password")
-        if len(new_password) < 6:
-            messages.error(request, "パスワードは6文字以上にしてください")
+        try:
+            validate_password(new_password, user=request.user)
+        except ValidationError as e:
+            for msg in e.messages:
+                messages.error(request, msg)
             return redirect("change_password")
 
         request.user.set_password(new_password)
@@ -97,24 +100,39 @@ def change_password(request):
     return render(request, 'diary/change_password.html')
 
 
-#ログイン
+# ログイン
 def login_view(request):
-    # すでにログイン中なら、ログイン画面を表示せずホームへ
     if request.user.is_authenticated:
         return redirect("home")
 
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
-        user = authenticate(request, username=username, password=password)
+        email = (request.POST.get("username") or "").strip().lower()
+        password = (request.POST.get("password") or "").strip()
+        
+        qs = User.objects.filter(email__iexact=email).only("id", "username", "password", "is_active").order_by("-id")
+        user = qs.first()
+        err_msg = "メールアドレスまたはパスワードが間違っています"
 
-        if user is not None:
-            login(request, user)
-            messages.success(request, "ログインしました")
-            return redirect("home")  # ログイン後にカレンダー画面へ
-        else:
-            messages.error(request, "ユーザー名またはパスワードが間違っています")
+        if not user or not user.is_active:
+            messages.error(request, err_msg)
+            return render(request, "diary/login.html")
+
+        # パスワード検証
+        if not check_password(password, user.password):
+            messages.error(request, err_msg)
+            return render(request, "diary/login.html")
+
+        # 認証 & ログイン
+        user = authenticate(request, username=user.username, password=password)
+        if user is None:
+            messages.error(request, err_msg)
+            return render(request, "diary/login.html")
+
+        login(request, user)
+        messages.success(request, "ログインしました")
+        return redirect("home")
     return render(request, "diary/login.html")
+
 
 
 #ログイン後操作可
@@ -202,7 +220,8 @@ def record_view(request, selected_date=None):
         Mood.objects.bulk_create([Mood(color=c) for c in DEFAULT_COLORS])
 
     order = Case(
-        *[When(color=c, then=idx) for idx, c in enumerate(DEFAULT_COLORS)],
+        *[When(color=c, then=idx) for idx, 
+          c in enumerate(DEFAULT_COLORS)],
         default=len(DEFAULT_COLORS),
         output_field=IntegerField(),
     )
@@ -220,14 +239,13 @@ def record_view(request, selected_date=None):
                 messages.info(request, "削除する記録はありません")
             return redirect("calendar")
 
-        # ★ 写真削除処理（モーダルからのPOST）
+        # ★ 写真削除処理
         if "remove_photo" in request.POST:
             if existing and existing.photo:
                 existing.photo.delete(save=False)
                 existing.photo = None
                 existing.save(update_fields=["photo"])
                 messages.success(request, "写真を削除しました")
-            # initial_date が None の場合に isoformat() で落ちないように分岐
             if initial_date:
                 return redirect("record_with_date", selected_date=initial_date.isoformat())
             else:
@@ -271,45 +289,51 @@ def record_view(request, selected_date=None):
 
             mood_value = data.get("mood")
             note_value = (data.get("note") or "").strip()
-            uploaded   = data.get("photo")
+            uploaded   = data.get("photo")                         # ← ここでだけ参照
             removing   = bool(request.POST.get("remove_photo"))
 
-            # ③ 既存バリデーション：気分/メモ/写真のいずれか必須
+            # 入力必須ルール（現状維持）
             if not mood_value and not note_value and not (uploaded or (existing and existing.photo and not removing)):
                 messages.error(request, "気分・メモ・写真のいずれか1つは入力してください")
                 return redirect("record_with_date", selected_date=save_date.isoformat())
 
-            # 写真の決定ロジック
-            if removing and existing and existing.photo:
-                existing.photo.delete(save=False)
+            # 保存対象インスタンスを決定
+            instance = existing if existing else Record(user=request.user, date=save_date)
+
+            # 置換前の古い写真を退避（保存後に消す用）
+            old_photo = instance.photo if getattr(instance, "photo", None) else None
+
+            # フィールド更新
+            instance.mood = mood_value or None
+            instance.note = note_value
 
             if removing:
-                photo_value = None
-            else:
-                if uploaded:
-                    photo_value = uploaded
-                else:
-                    photo_value = existing.photo if existing and existing.photo else None
+                instance.photo = None
+            elif uploaded:
+                instance.photo = uploaded
 
-            Record.objects.update_or_create(
-                user=request.user, date=save_date,
-                defaults={
-                    "mood":  data.get("mood") or None,
-                    "note":  data.get("note", ""),
-                    "photo": photo_value,
-                }
-            )
+            # 保存
+            instance.date = save_date
+            instance.user = request.user
+            instance.save()
+
+            # 新規アップロードがあって、古いファイルが別物なら後始末
+            if uploaded and old_photo and getattr(old_photo, "name", None) != getattr(instance.photo, "name", None):
+                try:
+                    old_photo.delete(save=False)
+                except Exception:
+                    pass
             messages.success(request, "記録を保存しました")
             return redirect("calendar")
-
+        
     else:
         form = RecordForm(instance=existing) if existing else RecordForm(initial={"date": initial_date})
 
-    # 選択中 mood
     if request.method == "POST":
         selected_mood_id = request.POST.get("mood") or None
     else:
-        selected_mood_id = str(existing.mood_id) if existing and existing.mood_id else None
+        selected_mood_id = str(existing.mood_id) if (existing and existing.mood_id) else None
+    
 
     return render(request, "diary/record.html", {
         "form": form,
@@ -318,7 +342,6 @@ def record_view(request, selected_date=None):
         "has_record": bool(existing),
         "display_date": initial_date,
     })
-
 
 @login_required
 def record_delete(request, pk):
@@ -339,7 +362,7 @@ def photo_delete(request, pk):
         messages.success(request, "写真を削除しました")
     else:
         messages.info(request, "削除できる写真がありません")
-    return redirect("calendar")  # ★ カレンダーに戻す
+    return redirect("calendar")
 
 
 @login_required
@@ -350,31 +373,45 @@ def settings_view(request):
 def logout_view(request):
     logout(request)
     messages.success(request, "ログアウトしました")
-    return redirect("login")  # ログアウト後はログイン画面へ
+    return redirect("login")
 
 
 def signup_view(request):
     if request.method == "POST":
-        username = request.POST.get("username", "").strip()
-        email = request.POST.get("email", "").strip()
-        password = request.POST.get("password", "").strip()
-        confirm_password = request.POST.get("confirm_password", "").strip()
+        username = (request.POST.get("username") or "").strip()
+        email    = ((request.POST.get("email") or "").strip()).lower()
+        password = (request.POST.get("password") or "").strip()
+        confirm_password = (request.POST.get("confirm_password") or "").strip()
 
         # 入力チェック
         if not username or not email or not password or not confirm_password:
             messages.error(request, "すべての項目を入力してください")
             return redirect("signup")
-
         if password != confirm_password:
             messages.error(request, "パスワードが一致しません")
             return redirect("signup")
-
-        if User.objects.filter(username=username).exists():
-            messages.error(request, "このユーザー名は既に使用されています")
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+            messages.error(request, "正しいメールアドレスの形式で入力してください")
             return redirect("signup")
-
-        if User.objects.filter(email=email).exists():
+        if len(password) < 8:
+            messages.error(request, "パスワードは8文字以上にしてください")
+            return redirect("signup")
+        if not re.search(r"[A-Za-z]", password) or not re.search(r"\d", password):
+            messages.error(request, "パスワードは英字と数字をそれぞれ1文字以上含めてください")
+            return redirect("signup")
+        if User.objects.filter(username__iexact=username).exists():
+             messages.error(request, "このユーザー名は既に使用されています")
+             return redirect("signup")
+        if User.objects.filter(email__iexact=email).exists():
             messages.error(request, "このメールアドレスは既に使用されています")
+            return redirect("signup")
+        
+        # Django標準の強度チェック（類似/使い回しなど）
+        try:
+            validate_password(password, user=User(username=username, email=email))
+        except ValidationError as e:
+            for msg in e.messages:
+                messages.error(request, msg)
             return redirect("signup")
 
         # ユーザー作成

@@ -104,11 +104,6 @@
               <input type="file" name="photo" id="photo-input-existing" accept="image/*" class="hidden-file">
             </label>
           </div>
-
-          <!-- 既存の差し替えプレビュー（必要なら使う） -->
-          <div id="photo-preview-wrap-existing" class="preview-wrap">
-            <img id="photo-preview-existing" alt="" class="pv-img">
-          </div>
         </div>
       {% endif %}
     </div>
@@ -136,8 +131,9 @@
   <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="moodTitle">
     <h3 id="moodTitle">気分の色とは</h3>
     <p>
-      気分を色で表すことで、その日を直感的に記録できます。<br><br>
-      言葉にしにくい日や、気軽に記録したい日にもおすすめです。
+      色の意味は自由に設定・変更してください。<br><br>
+      その日の気分に近い色を1つ選んで記録します。<br><br>
+      選んだ色はカレンダーに表示され、気分の変化を振り返ることができます。
     </p>
     <div class="modal-actions">
       <button type="button" class="btn" onclick="closeMoodModal()">閉じる</button>
@@ -344,6 +340,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  
+
+
 
   /* ================================
    * 5-2) 気分セレクト：色反映
@@ -399,6 +398,26 @@ function closeMoodModal() {
   moodModal.classList.remove("show");
   moodModal.setAttribute("aria-hidden", "true");
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  // 写真変更で選んだファイルに反映
+  const existingInput = document.getElementById("photo-input-existing");
+  const existingImg   = document.querySelector(".current-photo .cp-img");
+
+  if (existingInput && existingImg) {
+    existingInput.addEventListener("change", () => {
+      const file = existingInput.files && existingInput.files[0];
+      if (!file) return;
+
+      // 画像即時プレビュー
+      const url = URL.createObjectURL(file);
+      existingImg.src = url;
+      existingImg.style.display = "block";
+      existingImg.onload = () => URL.revokeObjectURL(url);
+    });
+  }
+});
+
 </script>
 
 
