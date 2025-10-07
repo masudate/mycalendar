@@ -106,7 +106,7 @@ def login_view(request):
         return redirect("home")
 
     if request.method == "POST":
-        email = (request.POST.get("username") or "").strip().lower()
+        email = (request.POST.get("email") or "").strip().lower()
         password = (request.POST.get("password") or "").strip()
         
         qs = User.objects.filter(email__iexact=email).only("id", "username", "password", "is_active").order_by("-id")
@@ -123,7 +123,7 @@ def login_view(request):
             return render(request, "diary/login.html")
 
         # 認証 & ログイン
-        user = authenticate(request, username=user.username, password=password)
+        user = authenticate(request, email=email, password=password)
         if user is None:
             messages.error(request, err_msg)
             return render(request, "diary/login.html")
@@ -425,3 +425,6 @@ def signup_view(request):
     return render(request, "diary/signup.html")
 
 
+#ポートフォリオ用ページ
+def portfolio(request):
+    return render(request, 'diary/portfolio.html')

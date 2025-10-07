@@ -61,12 +61,13 @@
         --title-min: 16px;
         --title-max: 30px;
         --title-offset: 12px; /* ページ見出しの上余白。12〜24pxで微調整OK */
-        --header-h: 60px;   /* ← ヘッダー全体の高さ */
+        --header-h: 80px;   /* ← ヘッダー全体の高さ */
         --title-h: 36px;    /* ← タイトル枠の縦の高さ */
         --title-pad-x: 8px; /* タイトル枠の左右余白 */
-        --title-box: 180px;      /* 通常時のタイトル枠の“横幅” */
+        --title-box: 250px;      /* 通常時のタイトル枠の“横幅” */
         --title-box-sm: 80px;   /* 中画面（～900px）での枠幅 */
         --title-box-xs: 40px;   /* 狭い画面（～560px）での枠幅 */
+        --title-badge-bw: 2px; /* 四角の太さ */
     }
 
     .record-title{
@@ -540,17 +541,17 @@
     .app-header nav li strong{ 
         font-size: inherit !important; }
 
-    /* すごく狭い画面はリンク文字をわずかに縮める（任意） */
+    /* すごく狭い画面はリンク文字をわずかに縮める */
     @media (max-width: 420px){
         .app-header nav .header-list a{ font-size: 0.95rem; }
         .site-title > strong{ border-width: 1px; padding: 1px 4px; }
     }
 
-    /* 全画面で“でかく見える”のは枠の余白のせいもあるので、広い画面だけ軽く締める */
+    /* 広い画面だけ軽く締める */
     @media (min-width: 1200px){
         .app-header.sticky.site-header .header-list .site-title > strong{
-            padding: 2px 8px;      /* ← 余白を控えめに */
-            border-width: 1px;     /* ← 枠線も細く */
+            padding: var(--title-badge-py) var(--title-badge-px);
+            border-width: var(--title-badge-bw);
         }
     }
 
@@ -642,6 +643,96 @@
 
     
     </style>
+
+    <!--  ヘッダー文字：白＋下方向の影 -->
+    <style id="header-contrast">
+    /* ヘッダー内の見出し/ロゴ/リンクを白で統一 */
+    header h1, header h2, header h3,
+    header .brand, header .site-title,
+    header a, header nav a {
+        color: #fff !important;
+    }
+    header a:visited, header nav a:visited {
+        color: #fff !important;
+    }
+
+    /* 下にだけ“柔らかい影”を付ける */
+    header h1, header h2, header h3,
+    header .brand, header .site-title,
+    header a, header nav a, header span, header strong {
+        /* 影は下方向を強めに。好みで数値だけ変えればOK */
+        text-shadow:
+        0 2px 3px rgba(0,0,0,.45),
+        0 1px 0 rgba(0,0,0,.35);
+    }
+    :root {
+        --header-h: 84px; /* 好みで 72〜96px に調整可 */
+    }
+    body > header {
+        min-height: var(--header-h);
+        padding: 16px 0;            /* 高さを出す（上下） */
+    }
+    body > header h1,
+    body > header .site-title,
+    body > header .brand {
+        font-size: 28px;             /* 24→28 など。好みで 30〜32 も可 */
+        line-height: 1.1;
+        margin: 0;
+        color: #fff !important;
+        text-shadow:
+            0 2px 3px rgba(0,0,0,.45),
+            0 1px 0 rgba(0,0,0,.35);
+    }
+    body > header nav,
+    body > header nav a,
+    body > header .nav a,
+    body > header ul li a,
+    body > header a,
+    body > header span,
+    body > header strong {
+        font-size: 26px !important;   /* ヘッダー内項目のサイズ” */
+        color: #fff !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,.35);
+    }
+    </style>
+
+    <!-- ▼ ボタン下マージン（全画面共通） -->
+    <style id="button-margins">
+    /* 単体ボタンの下に余白（本文内に限定） */
+    main .btn,
+    main button,
+    main input[type="submit"],
+    main input[type="button"] {
+        margin-bottom: 0px; /* ← 12～20px で調整可 */
+    }
+
+    /* 横並びのボタン群は行で余白管理（重複防止） */
+    .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 12px;      /* 上下/左右の間隔 */
+        margin-bottom: 14px;
+    }
+    .btn-row > .btn,
+    .btn-row > button,
+    .btn-row > input[type="submit"],
+    .btn-row > input[type="button"] {
+        margin-bottom: 0;   /* 行内は gap に任せる */
+    }
+
+    /* ▼ 例外指定：このクラスが付いたボタンは下マージンなし */
+    .btn--no-gap { margin-bottom: 0 !important; }
+
+    /* ▼ ラッパ内のボタンをまとめてマージンなし（設定画面など） */
+    .compact-actions .btn,
+    .compact-actions button,
+    .compact-actions input[type="submit"],
+    .compact-actions input[type="button"] {
+        margin-bottom: 0 !important;
+    }
+    </style>
+
+    
 </head>
 
 
@@ -650,7 +741,7 @@
     <header class="app-header sticky site-header">
         <nav>
             <ul class="header-list">
-            <li class="site-title"><strong>ジブンカレンダー</strong></li>
+            <li class="site-title"><strong><span class="title-badge">ジブンカレンダー</span></strong></li>
             <li><a href="{% url 'home' %}">カレンダー</a></li>
             <li><a href="{% url 'record' %}">記録する</a></li>
             <li><a href="{% url 'settings' %}">設定</a></li>

@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}ポートフォリオ | ジブンカレンダー{% endblock %}
+
+{% block content %}
+
+<!-- ヘッダー風の色付き帯（フル幅） -->
+<div class="pf-banner" role="banner" aria-label="ポートフォリオ見出し">
+  <div class="pf-banner__inner">
+    <h1 class="pf-banner__title">作品No.1 ジブンカレンダー</h1>
+  </div>
+</div>
+
+<main class="pf-wrap">
+  <!-- 画像 -->
+  <figure class="pf-image" aria-label="アプリスクリーンショット">
+    <img src="{% static 'portfolio/app-sample.png' %}" alt="アプリスクリーンショット">
+  </figure>
+
+
+  <!-- 概要説明 -->
+  <section class="pf-about" aria-labelledby="about-app">
+    <h2 id="about-app" style="font-size:0; height:0; overflow:hidden;">アプリ概要</h2>
+    <p>
+      ジブンカレンダーは気分・一言メモ・写真を一括で記録できるWebアプリです。
+      <br><br>
+      ユーザーはその日の気分・メモ・写真を1日単位で記録し、カレンダー形式で振り返ることができます。
+      <br><br>
+      気分・メモ・写真といった異なる記録形式を統合し、
+      カレンダー形式で確認できることで、
+      「気分」と「出来事」をひとまとめに記録・振り返ることができます。
+      <br><br>
+      こんなときにおすすめ：<br>
+      仕事や育児で忙しくても、1分で簡単に記録して後で振り返りたいとき<br>
+      写真とその日の思いと一緒に残したいとき<br>
+      気分の波を可視化して、自分のコンディションの傾向を把握したいとき
+    </p>
+  </section>
+
+<br>
+
+  <!-- 各種リンク（横並び・下線テキストのみ） -->
+  <nav aria-label="関連資料リンク">
+    <ul class="pf-links">
+      <li><a href="https://docs.google.com/document/d/1eJhP8sv5PEbIn3_nSeGNo1MahAN5h1hGPKZoHYRDC6M/edit?tab=t.0" target="_blank" rel="noopener">企画書</a></li>
+      <li><a href="https://app.diagrams.net/#G1xPkfmX1OuIU03d5RqCSb3TfGv-L_RZWH#%7B%22pageId%22%3A%228sWo_ozE6acMFM1DuKcz%22%7D" target="_blank" rel="noopener">画面遷移図</a></li>
+      <li><a href="https://app.diagrams.net/#G1TR3qfNBHupA3h-uDmghcFif7-WZ6vQEz#%7B%22pageId%22%3A%22_G1f0KVfYXaiQvZNkN9T%22%7D" target="_blank" rel="noopener">ER図</a></li>
+    </ul>
+  </nav>
+
+  <!-- アプリへ遷移ボタン（URL名は環境に合わせて。分からなければ "/" でOK） -->
+  <p style="margin: 12px 0 0;">
+    <a href="{% url 'calendar' %}" class="btn btn-primary">アプリを開く</a>
+  </p>
+</main>
+
+<style>
+
+  /* 既存ヘッダーは非表示 */
+  body > header { display: none !important; }
+
+  :root {
+    /* ヘッダーと同じ色 */
+    --header-color: #B0E0E6;
+    --title-color: #123; /* バナー内の文字色（見やすい濃い色） */
+  }
+
+  /* 画面上部の色付き四角（フル幅） */
+  .pf-banner {
+    width: 100%;
+    background: var(--header-color);
+    padding: 16px 0;
+    position: relative;
+    z-index: 0;
+  }
+  .pf-banner__inner {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 16px;
+    text-align: center;
+  }
+  .pf-banner__title {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--title-color);
+    letter-spacing: .5px;
+  }
+
+  /* 本文中央寄せ */
+  .pf-wrap {
+    max-width: 880px;
+    margin: 24px auto 36px;
+    padding: 0 16px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .pf-image { margin: 16px auto; }
+  .pf-image img {
+    max-width: 520px;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    position: relative;
+    z-index: 1;
+  }
+
+  .pf-about {
+    margin: 12px auto 18px;
+    line-height: 1.9;
+    color: #333;
+  }
+
+  /* 各種リンク：横並び・下線 */
+  .pf-links {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    flex-wrap: wrap; 
+    margin: 0 0 20px;
+    padding: 0;
+    list-style: none;
+  }
+  .pf-links a {
+    text-decoration: underline;
+    font-weight: 700;
+    color: #2f50ae;
+  }
+
+</style>
+{% endblock %}

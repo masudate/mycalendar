@@ -103,11 +103,11 @@ AUTHENTICATION_BACKENDS = [
 # =========================
 # 静的/メディア
 # =========================
-STATIC_URL = "static/"
-# collectstatic の出力先（本番で必須）
+STATIC_URL = "/static/"
+
 STATIC_ROOT = BASE_DIR / "staticfiles"
-# もしプロジェクト直下に独自静的ファイルがあるなら（任意）
-# STATICFILES_DIRS = [BASE_DIR / "static"]
+
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
