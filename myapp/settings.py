@@ -1,3 +1,4 @@
+
 """
 Django settings for myapp project.
 """
@@ -18,14 +19,24 @@ SECRET_KEY = os.getenv(
 # デフォルトは開発用に True。デプロイ先では環境変数 DJANGO_DEBUG=false を設定してOFFに。
 DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
 
-# --- ホスト/CSRF（ローカル & PythonAnywhere をデフォルトで許可）---
-_default_hosts = "localhost,127.0.0.1,masudate.pythonanywhere.com"
-ALLOWED_HOSTS = [h for h in os.getenv("ALLOWED_HOSTS", _default_hosts).split(",") if h]
+# デプロイ先のドメイン/ホストを環境変数で列挙（カンマ区切り）
+# 例: "your-app.onrender.com,www.example.com"
+ALLOWED_HOSTS = [h for h in os.getenv(
+    "ALLOWED_HOSTS",
+    "localhost,127.0.0.1,masudate.pythonanywhere.com"
+).split(",") if h]
 
-# CSRFは「スキーム付き」で指定する必要あり
-_default_csrf = "http://localhost,http://127.0.0.1,https://masudate.pythonanywhere.com"
-CSRF_TRUSTED_ORIGINS = [o for o in os.getenv("CSRF_TRUSTED_ORIGINS", _default_csrf).split(",") if o]
-# 逆プロキシ越しのHTTPSを認識（Render/Heroku/Nginx/Cloudflare等）
+# CSRF許可オリジン（httpsスキーム付き、カンマ区切り）
+# 例: "https://your-app.onrender.com,https://www.example.com"
+_csrf_env = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [o for o in os.getenv(
+    "CSRF_TRUSTED_ORIGINS",
+    "https://masudate.pythonanywhere.com"
+).split(",") if o]
+
+
+
+#逆プロキシ越しのHTTPSを認識（Render/Heroku/Nginx/Cloudflare等）
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # =========================
@@ -137,3 +148,9 @@ else:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_SSL_REDIRECT = True  # 本番はHTTPSへ強制リダイレクト
+
+# --- Local overrides (PythonAnywhere etc.) ---
+try:
+    from .local_settings import *  # noqa
+except Exception:
+    pass
