@@ -12,7 +12,6 @@ db.sqlite3
 
 # 収集した静的ファイルやユーザーアップロード
 staticfiles/
-static/
 media/
 
 # ログ
