@@ -44,7 +44,7 @@
 /* テーブル */
 .calendar-table{
   border-collapse:collapse;
-  width:90%;
+  width:min(90%, 1100px);
   text-align:center;
   margin:20px auto;
   table-layout:fixed;
@@ -107,9 +107,10 @@
 }
 </style>
 
+
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-  // 1) 色付き●と写真の描画（既存の JSON から）
+  // 1) 色付き●と写真の描画
   const mapEl = document.getElementById("records-by-date");
   const dataMap = mapEl ? JSON.parse(mapEl.textContent) : {};
 
@@ -145,12 +146,10 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   // セル全体クリックで遷移（画像・数字・● どこでもOK）
-  //    a.dot クリックはリンク遷移
   document.querySelector(".calendar-table")?.addEventListener("click", (e) => {
     const td = e.target.closest("td.calendar-day");
     if (!td) return;
 
-    // a.dotならブラウザの通常リンクでOK（ここでは何もしない）
     if (e.target.closest("a.dot")) return;
 
     const iso = td.dataset.date;
@@ -160,7 +159,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // 3) アクセシビリティ（キーボードでも遷移）
   document.querySelectorAll("td.calendar-day").forEach(td => {
-    td.tabIndex = 0; // フォーカス可能に
+    td.tabIndex = 0; 
     td.style.cursor = "pointer";
     td.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
@@ -171,6 +170,4 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 });
 </script>
-
-
 {% endblock %}
