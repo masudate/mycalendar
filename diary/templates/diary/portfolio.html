@@ -42,13 +42,18 @@
   <!-- 各種リンク（横並び・下線テキストのみ） -->
   <nav aria-label="関連資料リンク">
     <ul class="pf-links">
-      <li><a href="https://documentcloud.adobe.com/gsuiteintegration/index.html?state=%7B%22ids%22%3A%5B%221jG8pBiUWibTvy5x_Rez4H1MLd7TIZjlv%22%5D%2C%22action%22%3A%22open%22%2C%22userId%22%3A%22109904469145092909182%22%2C%22resourceKeys%22%3A%7B%7D%7D" target="_blank" rel="noopener">企画書</a></li>
-      <li><a href="https://documentcloud.adobe.com/gsuiteintegration/index.html?state=%7B%22ids%22%3A%5B%221uVlhD0AiLeiwJr4JVLc7fJFQNnFwWnAX%22%5D%2C%22action%22%3A%22open%22%2C%22userId%22%3A%22109904469145092909182%22%2C%22resourceKeys%22%3A%7B%7D%7D" target="_blank" rel="noopener">画面遷移図</a></li>
-      <li><a href="https://documentcloud.adobe.com/gsuiteintegration/index.html?state=%7B%22ids%22%3A%5B%221IvHGsdURF-IntC-2dwSi-wvucF6D0XwZ%22%5D%2C%22action%22%3A%22open%22%2C%22userId%22%3A%22109904469145092909182%22%2C%22resourceKeys%22%3A%7B%7D%7D" target="_blank" rel="noopener">ER図</a></li>
+      <li><a href="{% static 'portfolio/proposal.pdf' %}" target="_blank" rel="noopener">
+        企画書</a></li>
+      <li><a href="{% static 'portfolio/userflow.pdf' %}" target="_blank" rel="noopener">
+        画面遷移図</a></li>
+      <li><a href="{% static 'portfolio/er.pdf' %}" target="_blank" rel="noopener">
+        ER図</a></li>
+      <li><a href="{% static 'portfolio/screen.pdf' %}" target="_blank" rel="noopener">
+        画面設計図</a></li>
     </ul>
   </nav>
 
-  <!-- アプリへ遷移ボタン（URL名は環境に合わせて。分からなければ "/" でOK） -->
+  <!-- アプリへ遷移ボタン -->
   <p style="margin: 12px 0 0;">
     <a href="{% url 'calendar' %}" class="btn btn-primary">アプリを開く</a>
   </p>

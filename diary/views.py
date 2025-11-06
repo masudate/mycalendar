@@ -6,6 +6,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.staticfiles import finders
+from django.http import FileResponse, Http404
 from django.db.models import Case, When, IntegerField
 from django.core.exceptions import ValidationError
 from datetime import date, timedelta
@@ -14,6 +16,7 @@ import calendar
 from .forms import RecordForm
 from .models import Record, Mood
 import re
+import base64
 
 
 @login_required
@@ -129,6 +132,7 @@ def login_view(request):
             return render(request, "diary/login.html")
 
         login(request, user)
+        request.session["show_login_tip"] = True
         messages.success(request, "ログインしました")
         return redirect("home")
     return render(request, "diary/login.html")
@@ -195,11 +199,28 @@ def calendar_view(request):
         "recorded_dates": recorded_dates,  
         "records_by_date": records_by_date, 
     }
+    
+    #messages.success(request, "今日の気分を記録しましょう！", extra_tags="hint")
+    if request.session.pop("show_login_tip", False):
+        messages.success(request, "今日の気分を記録しましょう！", extra_tags="hint")
+    
     return render(request, "diary/calendar.html", context)
 
 
 @login_required
 def record_view(request, selected_date=None):
+    def _make_preview_data_uri(uploaded):
+        if not uploaded:
+            return None
+        try:
+            content_type = getattr(uploaded, "content_type", "image/*")
+            data = uploaded.read()
+            uploaded.seek(0)
+            b64 = base64.b64encode(data).decode("ascii")
+            return f"data:{content_type};base64,{b64}"
+        except Exception:
+            return None
+
     # --- 日付の取得（?date=YYYY-MM-DD） ---
     date_str = request.GET.get("date", "") or selected_date or ""
     initial_date = None
@@ -214,7 +235,7 @@ def record_view(request, selected_date=None):
     if initial_date:
         existing = Record.objects.filter(user=request.user, date=initial_date).first()
 
-    # --- Mood マスター（5色） ---
+    # --- 気分（5色） ---
     DEFAULT_COLORS = ["red", "orange", "yellow", "green", "blue"]
     if not Mood.objects.exists():
         Mood.objects.bulk_create([Mood(color=c) for c in DEFAULT_COLORS])
@@ -258,23 +279,61 @@ def record_view(request, selected_date=None):
         post_date_str = (request.POST.get("date") or "").strip()
         if not post_date_str:
             messages.error(request, "日付を入力してください")
-            
-            form = RecordForm(request.POST, instance=existing)
-            
             # 入力保持
+            form = RecordForm(request.POST, instance=existing)
             selected_mood_id = request.POST.get("mood") or None
+            preview_data_uri = _make_preview_data_uri(request.FILES.get("photo"))
+
             return render(request, "diary/record.html", {
                 "form": form,  
                 "moods": moods,
                 "selected_mood_id": selected_mood_id,
                 "has_record": bool(existing),
                 "display_date": initial_date,
-                "reset_photo": True, 
+                "reset_photo": False,
+                "current_photo": (existing.photo if (existing and existing.photo) else None), 
+                "preview_data_uri": preview_data_uri,
+
             })
+            
+        #  気分必須チェック
+        mood_id = (request.POST.get("mood") or "").strip()
+        if not mood_id:
+            messages.error(request, "気分を選択してください")
+            selected_mood_id = None
+            # 入力保持
+            form = RecordForm(request.POST, instance=existing)
+            return render(request, "diary/record.html", {
+                "form": form,
+                "moods": moods,
+                "selected_mood_id": selected_mood_id,
+                "has_record": bool(existing),
+                "display_date": initial_date,
+                "reset_photo": False,
+                "current_photo": (existing.photo if (existing and existing.photo) else None),  
+            })
+        # ここで必ず存在するMoodを取得（なければ404）
+        mood_obj = get_object_or_404(Mood, pk=mood_id)
+
 
         if form.is_valid():
             data = form.cleaned_data
             save_date = data.get("date")
+            
+            # 日付範囲制限
+            if save_date and save_date > date.today():
+                messages.error(request, "未来の日付は記録できません")
+                selected_mood_id = request.POST.get("mood") or None
+                form = RecordForm(request.POST, instance=existing)
+                return render(request, "diary/record.html", {
+                    "form": form,
+                    "moods": moods,
+                    "selected_mood_id": selected_mood_id,
+                    "has_record": bool(existing),
+                    "display_date": initial_date,
+                    "reset_photo": False,
+                    "current_photo": (existing.photo if (existing and existing.photo) else None),
+                })
             if not save_date:
                 messages.error(request, "日付を入力してください")
                 selected_mood_id = request.POST.get("mood") or None
@@ -285,17 +344,13 @@ def record_view(request, selected_date=None):
                     "has_record": bool(existing),
                     "display_date": initial_date,
                     "reset_photo": False,
+                    "current_photo": (existing.photo if (existing and existing.photo) else None),
                 })
 
             mood_value = data.get("mood")
             note_value = (data.get("note") or "").strip()
             uploaded   = data.get("photo")                         # ← ここでだけ参照
             removing   = bool(request.POST.get("remove_photo"))
-
-            # 入力必須ルール（現状維持）
-            if not mood_value and not note_value and not (uploaded or (existing and existing.photo and not removing)):
-                messages.error(request, "気分・メモ・写真のいずれか1つは入力してください")
-                return redirect("record_with_date", selected_date=save_date.isoformat())
 
             # 保存対象インスタンスを決定
             instance = existing if existing else Record(user=request.user, date=save_date)
@@ -304,7 +359,7 @@ def record_view(request, selected_date=None):
             old_photo = instance.photo if getattr(instance, "photo", None) else None
 
             # フィールド更新
-            instance.mood = mood_value or None
+            instance.mood = mood_obj
             instance.note = note_value
 
             if removing:
@@ -341,6 +396,7 @@ def record_view(request, selected_date=None):
         "selected_mood_id": selected_mood_id,
         "has_record": bool(existing),
         "display_date": initial_date,
+        "current_photo": (existing.photo if (existing and existing.photo) else None),
     })
 
 @login_required
@@ -428,3 +484,45 @@ def signup_view(request):
 #ポートフォリオ用ページ
 def portfolio(request):
     return render(request, 'diary/portfolio.html')
+
+
+#企画書リンク
+def pdf_proposal(request):
+    fp = finders.find('portfolio/proposal.pdf')
+    if not fp:
+        raise Http404("PDF not found")
+    f = open(fp, 'rb')
+    resp = FileResponse(f, content_type='application/pdf')
+    resp["Content-Disposition"] = 'inline; filename="proposal.pdf"'
+    return resp
+
+#画面遷移図リンク
+def pdf_userflow(request):
+    fp = finders.find('portfolio/userflow.pdf')
+    if not fp:
+        raise Http404("PDF not found")
+    f = open(fp, 'rb')
+    resp = FileResponse(f, content_type='application/pdf')
+    resp["Content-Disposition"] = 'inline; filename="userflow.pdf"'
+    return resp
+
+#ER図リンク
+def pdf_er(request):
+    fp = finders.find('portfolio/er.pdf')
+    if not fp:
+        raise Http404("PDF not found")
+    f = open(fp, 'rb')
+    resp = FileResponse(f, content_type='application/pdf')
+    resp["Content-Disposition"] = 'inline; filename="er.pdf"'
+    return resp
+
+#画面設計図リンク
+def pdf_screen(request):
+    fp = finders.find('portfolio/screen.pdf')
+    if not fp:
+        raise Http404("PDF not found")
+    f = open(fp, 'rb')
+    resp = FileResponse(f, content_type='application/pdf')
+    resp["Content-Disposition"] = 'inline; filename="screen.pdf"'
+    return resp
+

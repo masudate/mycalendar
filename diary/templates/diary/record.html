@@ -19,7 +19,7 @@
   {% csrf_token %}
 
   <!-- 2-1) 上段：写真あり→2カラム / 写真なし→1カラムレイアウト -->
-  <div class="{% if form.instance and form.instance.photo %}top-grid{% else %}single-col{% endif %}">
+  <div class="{% if current_photo %}top-grid{% else %}single-col{% endif %}">
 
     <!-- 左カラム：日付 / 気分 / メモ / （写真未登録時の写真） -->
     <div class="left-col">
@@ -36,18 +36,40 @@
           <label for="mood">気分</label>
           <span class="help" onclick="openMoodModal()">？</span>
         </div>
+
+        <!-- ネイティブ select（送信用）。後でJSが視覚的に隠す -->
         <select id="mood" name="mood">
-          <option value="" data-color="" style="color: black;">（未選択）</option>
+          <option value="" data-color="">（未選択）</option>
           {% for m in moods %}
             <option
               value="{{ m.id }}"
               data-color="{{ m.color }}"
-              style="color: {{ m.color }};"
               {% if selected_mood_id == m.id|stringformat:"s" %}selected{% endif %}
-            >●</option>
+            >{{ m.name|default:"色" }}</option>
           {% endfor %}
         </select>
+
+        <!-- 色選択ドロップダウン -->
+        <div class="mood-select" data-enhance="mood">
+          <button type="button" class="mood-trigger" aria-haspopup="listbox" aria-expanded="false">
+            <span class="mood-dot" aria-hidden="true"></span>
+            <span class="mood-label">選択してください</span>
+          </button>
+          <div class="mood-panel" role="listbox" tabindex="-1" hidden>
+            {% for m in moods %}
+              <button type="button"
+                      role="option"
+                      class="mood-option"
+                      data-value="{{ m.id }}"
+                      data-color="{{ m.color }}"
+                      aria-selected="false">
+                <span class="mood-dot" aria-hidden="true" style="--c: {{ m.color }};"></span>
+              </button>
+            {% endfor %}
+          </div>
+        </div>
       </div>
+
 
       <!-- メモ -->
       <div class="form-row">
@@ -62,20 +84,28 @@
         <input type="file" id="photo-input" name="photo" accept="image/*">
 
         <!-- 新規選択プレビュー（初期は非表示） -->
-        <div id="photo-preview-wrap" class="record-preview" aria-hidden="true" style="display:none;background:transparent;border:0;padding:0;box-shadow:none;outline:0;">
+        <div id="photo-preview-wrap" 
+          class="record-preview" 
+          aria-hidden="{% if preview_data_uri %}false{% else %}true{% endif %}"
+          style="background:transparent;border:0;padding:0;box-shadow:none;outline:0;{% if not preview_data_uri %}display:none;{% endif %}">
           <div class="photo-preview-title" style="font-size:12px;color:#555;display:none;">写真プレビュー</div>
 
           <!-- プレビュー画像（枠ゼロ・角丸のみ） -->
           <img id="photo-preview" alt=""
-              style="display:none;max-width:240px;max-height:160px;object-fit:cover;border:0;outline:0;box-shadow:none;border-radius:6px;">
+              {% if preview_data_uri %}
+              src="{{ preview_data_uri }}"
+              style="display:block;max-width:240px;max-height:160px;object-fit:cover;border:0;outline:0;box-shadow:none;border-radius:6px;"
+              {% else %}
+              style="display:none;max-width:240px;max-height:160px;object-fit:cover;border:0;outline:0;box-shadow:none;border-radius:6px;"
+              {% endif %}>
 
-          <!-- 新規選択後だけ出す操作ボタン（表示/非表示はCSSで制御） -->
+          <!-- 新規選択後だけ出す操作ボタン -->
           <div id="photo-new-actions" class="photo-actions">
             <button type="button" class="btn btn-danger-outline" id="btn-remove-photo">
               写真削除
             </button>
 
-            <!-- 写真変更は “選び直し専用”（nameは付けない） -->
+            <!-- 写真変更は “選び直し専用” -->
             <label class="btn btn-secondary filebtn">
               写真変更
               <input type="file" id="photo-reselect" accept="image/*" class="hidden-file">
@@ -88,10 +118,10 @@
 
     <!-- 右カラム：現在の写真（ある場合のみ） -->
     <div class="right-col">
-      {% if form.instance and form.instance.photo %}
+      {% if current_photo %}
         <div class="current-photo">
           <div class="cp-title">現在の写真</div>
-          <img src="{{ form.instance.photo.url }}" alt="" class="cp-img">
+          <img src="{{ current_photo.url }}" alt="" class="cp-img">
 
           <!-- 写真操作 -->
           <div class="photo-actions">
@@ -247,6 +277,65 @@ input[type="date"], #mood { height: 40px; box-sizing: border-box; }
 .single-col { align-items: center !important; }
 .single-col .left-col { align-self: center !important; display: flex; flex-direction: column; align-items: stretch !important; }
 .single-col .left-col .form-row { width: 100%; max-width: var(--field-width, 520px); }
+
+/* 視覚的に隠す（フォーム送信用にDOMは残す） */
+.u-vh {
+  position:absolute !important; width:1px !important; height:1px !important;
+  padding:0 !important; margin:-1px !important; overflow:hidden !important;
+  clip:rect(0 0 1px 1px) !important; white-space:nowrap !important; border:0 !important;
+}
+
+/* カスタム・ドロップダウン */
+.mood-select{ position:relative; display:block; width:100%; max-width: var(--field-width, 520px); }
+.mood-trigger {
+  display:flex; justify-content:center; align-items:center; gap:8px; /* ← display:center は無効 */
+  width:100%; height:40px;
+  padding:8px 10px; border:1px solid #ccc; border-radius:6px; background:#fff; cursor:pointer;
+}
+.mood-trigger .mood-dot{
+  width:16px; height:16px; border-radius:50%; background: var(--c, transparent);
+}
+.mood-panel{
+  position:absolute; top:calc(100% + 6px); z-index:2000;
+  left:50%; transform: translateX(-50%);
+  width: min(100%, 320px);           /* 必要に応じてパネル幅 */
+  max-width: calc(100vw - 24px);
+  box-sizing:border-box;
+  background:#fff; border:1px solid #ddd; border-radius:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,.12);
+  padding:12px 16px;
+  display:flex;
+  flex-direction: column;
+  align-items: center;               /* 水平中央 */
+  justify-content: center;           /* 垂直中央 */
+  gap:8px;
+  min-height: 160px;
+}
+.mood-panel[hidden] { display: none !important; }
+.mood-option{
+  display:grid;
+  justify-content:center;
+  place-items:center;
+  width:100%;
+  height:40px;
+  border-radius:6px; background:#fff; border:1px solid transparent; cursor:pointer;
+  line-height:0;
+  font-size:0;
+}
+.mood-option .mood-dot{
+  display:block;
+  margin:auto;              
+  width:14px; height:14px;
+  border-radius:50%;
+  background: var(--c);
+}
+.mood-option[aria-selected="true"]{
+  background:#f2f6ff; border-color:#cfe0ff;
+}
+.mood-option:hover{ background:#f7f7f7; }
+.mood-trigger.is-chosen .mood-label { display: none; }
+.mood-trigger.is-chosen { gap: 0; }
+
 </style>
 
 
@@ -273,6 +362,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const actions   = document.getElementById("photo-new-actions");
   const removeBtn = document.getElementById("btn-remove-photo");
   const reselect  = document.getElementById("photo-reselect");
+  const sel = document.getElementById("mood");
+  const noteEl = document.getElementById("{{ form.note.id_for_label }}");
+  if (noteEl) noteEl.placeholder = "（例）今日の気分の理由や出来事などを書いてみてください";
 
   const closePreview = () => {
     if (img) {
@@ -340,32 +432,80 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  
-
-
 
   /* ================================
    * 5-2) 気分セレクト：色反映
    * ================================ */
-  const sel = document.getElementById("mood");
-  if (sel) {
-    const paintOptionColors = () => {
-      for (const opt of sel.options) {
-        opt.style.color = opt.value ? (opt.dataset.color || opt.style.color || "") : "black";
+  (function(){
+    const sel = document.getElementById("mood");
+    const root = document.querySelector('[data-enhance="mood"]');
+    if (!sel || !root) return;
+
+    const trigger = root.querySelector('.mood-trigger');
+    const panel   = root.querySelector('.mood-panel');
+    const labelEl = trigger.querySelector('.mood-label');
+    const dotEl   = trigger.querySelector('.mood-dot');
+    const opts    = [...panel.querySelectorAll('.mood-option')];
+
+    // ネイティブselectは視覚的に隠す（送信用に残す）
+    sel.classList.add('u-vh');
+
+    // value→color 逆引き
+    const val2color = new Map(
+      [...sel.options].map(o => [o.value, o.dataset.color || ""])
+    );
+
+    function apply(val){
+      // セレクト更新
+      sel.value = val || "";
+      // トリガー表示更新
+      const color = val2color.get(sel.value) || "";
+      dotEl.style.setProperty('--c', color || 'transparent');
+
+      const txt = (() => {
+        if (!sel.value) return '選択してください';
+        const o = [...sel.options].find(o => o.value === sel.value);
+        return (o && (o.textContent || o.innerText)) || '色';
+      })();
+      labelEl.textContent = "";
+
+      // リストの選択表示
+      opts.forEach(b => b.setAttribute('aria-selected', b.dataset.value === sel.value ? 'true' : 'false'));
+
+      // ラベルと見た目（未選択→文言、選択後→ラベル非表示）
+      if (!sel.value) {
+        labelEl.textContent = '色を選択してください（必須）';
+        trigger.classList.remove('is-chosen');
+      } else {
+        labelEl.textContent = ''; // テキストは消す（●だけ見せる）
+        trigger.classList.add('is-chosen');
       }
-    };
-    const applyColorToSelectFace = () => {
-      const opt = sel.options[sel.selectedIndex];
-      const value = opt ? opt.value : "";
-      sel.style.color = value ? (opt.dataset.color || opt.style.color || "black") : "black";
-    };
-    paintOptionColors();
-    applyColorToSelectFace();
-    sel.addEventListener("change", () => { paintOptionColors(); applyColorToSelectFace(); });
-    sel.addEventListener("focus",  paintOptionColors);
-    sel.addEventListener("mousedown", paintOptionColors);
-    sel.addEventListener("keyup",  paintOptionColors);
-  }
+
+      // 他の処理と連動させたい
+      sel.dispatchEvent(new Event('change', {bubbles:true}));
+    }
+
+    // 開閉
+    function open(){ panel.hidden = false; trigger.setAttribute('aria-expanded','true'); }
+    function close(){ panel.hidden = true; trigger.setAttribute('aria-expanded','false'); }
+    function toggle(){ (panel.hidden ? open : close)(); }
+
+    trigger.addEventListener('click', toggle);
+    document.addEventListener('click', (e) => {
+      if (!root.contains(e.target)) close();
+    });
+
+    // 選択
+    opts.forEach(b => {
+      b.addEventListener('click', () => { apply(b.dataset.value || ""); close(); });
+    });
+
+    // 初期状態
+    apply(sel.value || "");
+
+    // もし外部でselectが書き換わった時も同期
+    sel.addEventListener('change', () => apply(sel.value || ""));
+  })();
 
   /* ================================
    * 5-3) 既存写真の削除モーダル（右カラム）
@@ -417,8 +557,5 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
-
 </script>
-
-
 {% endblock %}

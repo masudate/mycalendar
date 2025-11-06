@@ -18,25 +18,15 @@
         background-color: #B0E0E6; /* 薄めの水色 */
         padding: 10px 20px;
     }
-    nav ul {
-        display: flex;
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        align-items: center;
-    }
+    
     nav li {
         color: white;
         text-align: center;
     }
-    nav a {
-        color: white;
-        text-decoration: none;
-        font-weight: bold;
-        font-size: 20px; /* ヘッダーの文字サイズ */
-    }
+    .app-header nav a  { color: white; text-decoration: none; font-weight: bold; }
+    
     nav a:hover { text-decoration: underline; }
+    
     nav li strong {
         font-size: inherit;
         color: white;
@@ -58,16 +48,8 @@
     }
     /* 共通ページタイトル（記録・設定など） */
     :root{
-        --title-min: 16px;
-        --title-max: 30px;
         --title-offset: 12px; /* ページ見出しの上余白。12〜24pxで微調整OK */
         --header-h: 80px;   /* ← ヘッダー全体の高さ */
-        --title-h: 36px;    /* ← タイトル枠の縦の高さ */
-        --title-pad-x: 8px; /* タイトル枠の左右余白 */
-        --title-box: 250px;      /* 通常時のタイトル枠の“横幅” */
-        --title-box-sm: 80px;   /* 中画面（～900px）での枠幅 */
-        --title-box-xs: 40px;   /* 狭い画面（～560px）での枠幅 */
-        --title-badge-bw: 2px; /* 四角の太さ */
     }
 
     .record-title{
@@ -390,6 +372,7 @@
     .message.success { color:#0f6b2e; }
     .message.info    { color:#1a73e8; }
     .message.warning { color:#8a6d00; }
+    .message.hint { color:#1D4ED8; }
 
     .errorlist {
     list-style: none;
@@ -450,251 +433,101 @@
         margin-top:16px;
     }
 
-    /* === ヘッダー（あるページだけ表示）=== */
-    .app-header {
-        background-color: #B0E0E6;
-        padding: 10px 20px;
-    }
-    .app-header nav ul {
-        display: flex;
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        align-items: center;
-    }
-    .app-header nav li {
-        color: white;
-        text-align: center;
-    }
-    .app-header nav a {
-        color: white;
-        text-decoration: none;
-        font-weight: bold;
-        font-size: 20px;
-    }
-    .app-header nav a:hover { text-decoration: underline; }
-    .app-header nav li strong {
-        font-size: inherit;
-        color: white;
-        border: 2px solid white;
-        padding: 5px 10px;
-        border-radius: 8px;
+
+    /* ===============================
+    8) ヘッダー（完成版：高さ/項目フォント固定、タイトルのみ可変）
+    =============================== */
+    :root{
+    --header-h: 76px;          /* 高さ：固定 */
+    --link-fs: 24px;           /* 項目の文字サイズ：固定 */
+    --hdr-title-fs: 28px;      /* タイトルの文字サイズ（最大画面） */
+    --hdr-title-box: 260px;    /* タイトルの箱幅（最大画面） */
+    --hdr-gap: 24px;           /* 項目間隔（幅が足りない時だけ段階的に詰める） */
+    --hdr-pad-x: 10px;         /* 左右padding（幅が足りない時だけ段階的に詰める） */
+    --hdr-pad-y: 8px;
     }
 
-    /* 固定（sticky）は .sticky が付いてるときだけ */
-    .app-header.sticky {
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    .app-header{
+    position: sticky; top: 0; z-index: 1000;
+    background: #B0E0E6;
+    height: var(--header-h);           /* 高さ固定 */
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
     }
+    .app-header nav{ height: 100%; }
 
-    /* ── ヘッダーUL：1行固定・タイトルだけ縮む（4項目は常にフル表示） ── */
-    .app-header nav ul.header-list{
-        display: flex !important;   /* gridと競合しても必ずflexに */
-        flex-wrap: nowrap;          /* 折り返さない＝4リンクは常に見える */
-        align-items: center;
-        gap: 20px;
-        margin: 0;
-        padding: 0;
-        list-style: none;
-        width: 100%;
-        overflow: hidden;           /* タイトルを省略…させるため必須 */
-    }
-
-    /* 4つのリンクは縮めない（幅確保＆1行死守） */
-    .app-header nav .header-list > li:not(.site-title){
-        flex: 0 0 auto;
-        white-space: nowrap;
-        text-align: center;
-    }
-    .app-header nav .header-list a{
-        display: inline-block;
-        color: white;
-        text-decoration: none;
-        font-weight: bold;
-        font-size: 20px;
-    }
-    .app-header nav .header-list a:hover{ 
-        text-decoration: underline; 
-    }
-
-    /* タイトルだけが余り幅を全部持ち、足りなければ省略…で縮む */
-    .site-title{ min-width: 0; }
-    .site-title > strong{
-        display: block;
-        line-height: 1.5; !important;
-        font-weight: 700;
-        font-size: clamp(var(--title-min), 2.2vw + 8px, var(--title-max));
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;   /* ← 省略… */
-        padding: 2px 8px; !important;
-        border: 1px solid #fff;
-        border-radius: 8px;
-        margin-inline-end: 8px
-    }
-
-    /* 念のため：strongに固定サイズが来ても潰す */
-    nav li strong,
-    .app-header nav li strong{ 
-        font-size: inherit !important; }
-
-    /* すごく狭い画面はリンク文字をわずかに縮める */
-    @media (max-width: 420px){
-        .app-header nav .header-list a{ font-size: 0.95rem; }
-        .site-title > strong{ border-width: 1px; padding: 1px 4px; }
-    }
-
-    /* 広い画面だけ軽く締める */
-    @media (min-width: 1200px){
-        .app-header.sticky.site-header .header-list .site-title > strong{
-            padding: var(--title-badge-py) var(--title-badge-px);
-            border-width: var(--title-badge-bw);
-        }
-    }
-
-    /* 4項目は優先表示：タイトル枠は固定サイズ（余り幅はもう使わない） */
-    .site-title{
-        flex: 0 1 var(--title-box);  /* ← これで枠の横幅を固定（最大でも --title-box） */
-        min-width: 120px;            /* ぎりぎりのときの下限（お好みで） */
-    }
-
-    /* 枠の中でテキストだけが省略…で調整される */
-    .site-title > strong{
-        display: block;
-        width: 100%;           /* 枠いっぱいを使う */
-        max-width: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: 1.5;
-        font-weight: 700;
-        font-size: clamp(var(--title-min), 2.2vw + 8px, var(--title-max));
-        padding: 2px 6px;      /* ここは“固定値”なので枠の見た目は変化しない */
-        border: 1px solid #fff;
-        border-radius: 8px;
-    }
-
-    /* ULは1行flexを強制（念のため） */
-    .app-header nav ul.header-list{
-    display: flex !important;
-    flex-wrap: nowrap !important;   /* 折り返さず常時4リンクを表示 */
-    align-items: center;
-    gap: 20px;
+    .app-header nav .header-list{
+    height: 100%;
+    display: flex;
+    align-items: center;               /* 上下均等 */
+    justify-content: center;
+    flex-wrap: nowrap !important;      /* 常に1行 */
+    gap: var(--hdr-gap);
     margin: 0;
-    padding: 0;
+    padding: 0 16px;
     list-style: none;
-    width: 100%;
-    overflow: hidden;               /* タイトルを省略…させるため必須 */
+    overflow: hidden;                   /* タイトルの…用 */
     }
 
-    /* 4つのリンクは縮めない（幅を確保） */
+    /* 項目（タイトル以外）はフル表示・省略しない */
     .app-header nav .header-list > li:not(.site-title){
-    flex: 0 0 auto !important;
-    white-space: nowrap;
+    flex: 0 0 auto;
+    min-width: auto;
     text-align: center;
-    }
-
-    /* タイトル“枠”を固定幅にする（grow/shrink 0、basis=固定幅） */
-    .site-title{
-    flex: 0 0 var(--title-box) !important;
-    min-width: 0 !important;        /* 以前の下限（120px）を無効化 */
-    }
-
-    /* 中の文字は省略…で調整（枠は動かない） */
-    .site-title > strong{
-    display: block;
-    width: 100%;
-    max-width: 100%;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;        /* ← 省略… */
-    line-height: 1.5;
+    }
+    .app-header nav .header-list > li:not(.site-title) a{
+    white-space: nowrap; overflow: visible; text-overflow: clip;
+    padding: var(--hdr-pad-y) var(--hdr-pad-x);
+    font-size: var(--link-fs);
+    line-height: 1;
     font-weight: 700;
-    font-size: clamp(var(--title-min), 2.2vw + 8px, var(--title-max));
-    padding: 2px 6px;               /* 見た目の高さは固定値で安定 */
-    border: 1px solid #fff;
-    border-radius: 8px;
+    text-decoration: none;
     }
 
-    /* 画面に応じて“枠幅”だけ段階的に調整（文字は常に省略で対応） */
-    @media (max-width: 900px){
-    .site-title{ flex-basis: var(--title-box-sm) !important; }
+    /* タイトルは“箱幅固定ベース（最大時） */
+    .app-header .header-list > li.site-title{
+        flex: 0 0 var(--hdr-title-box);   
+        min-width: 0;                     
+        text-align: center;
     }
-    @media (max-width: 560px){
-    .site-title{ flex-basis: var(--title-box-xs) !important; }
-    }
-
-    /* === ヘッダー項目を中央揃え（グループごと中央）=== */
-    .app-header nav ul.header-list{
-    justify-content: center !important; /* ← 左寄せ→中央寄せに */
-    gap: 28px;                          /* 項目の間隔（お好みで調整） */
-    }
-
-    /* 念のため：各項目の中身も中央寄せ */
-    .app-header nav .header-list > li{
-    text-align: center !important;
+    .app-header .site-title > strong{
+        display: block;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* ← タイトルのみ … */
+        padding: var(--hdr-pad-y) var(--hdr-pad-x);
+        border: 1px solid #fff; border-radius: 8px;
+        font-size: var(--hdr-title-fs);   
+        line-height: 1;
+        color: #fff; text-decoration: none;
     }
 
-    /* タイトルボックス内の文字も中央に */
-    .site-title{ text-align: center !important; }
+    /* ── “幅だけ”段階的に圧縮（高さ/フォントを変えない）── */
+    @media (max-width: 1280px){ :root{ --hdr-gap: 20px; --hdr-pad-x: 8px; } }
+    @media (max-width: 1120px){ :root{ --hdr-gap: 16px; --hdr-pad-x: 6px; } }
+    @media (max-width: 980px) { :root{ --hdr-gap: 12px; --hdr-pad-x: 6px; } }
+    @media (max-width: 880px) { :root{ --hdr-gap: 10px; --hdr-pad-x: 5px; } }
+    @media (max-width: 800px) { :root{ --hdr-gap: 8px;  --hdr-pad-x: 4px; } }
+    @media (max-width: 740px) { :root{ --hdr-gap: 6px;  --hdr-pad-x: 4px; } }
 
     
     </style>
 
-    <!--  ヘッダー文字：白＋下方向の影 -->
+    <!-- ヘッダー文字：白＋影（サイズは触らない） -->
     <style id="header-contrast">
-    /* ヘッダー内の見出し/ロゴ/リンクを白で統一 */
     header h1, header h2, header h3,
     header .brand, header .site-title,
     header a, header nav a {
         color: #fff !important;
     }
-    header a:visited, header nav a:visited {
-        color: #fff !important;
-    }
-
-    /* 下にだけ“柔らかい影”を付ける */
     header h1, header h2, header h3,
     header .brand, header .site-title,
     header a, header nav a, header span, header strong {
-        /* 影は下方向を強めに。好みで数値だけ変えればOK */
-        text-shadow:
-        0 2px 3px rgba(0,0,0,.45),
-        0 1px 0 rgba(0,0,0,.35);
-    }
-    :root {
-        --header-h: 84px; /* 好みで 72〜96px に調整可 */
-    }
-    body > header {
-        min-height: var(--header-h);
-        padding: 16px 0;            /* 高さを出す（上下） */
-    }
-    body > header h1,
-    body > header .site-title,
-    body > header .brand {
-        font-size: 28px;             /* 24→28 など。好みで 30〜32 も可 */
-        line-height: 1.1;
-        margin: 0;
-        color: #fff !important;
         text-shadow:
             0 2px 3px rgba(0,0,0,.45),
             0 1px 0 rgba(0,0,0,.35);
     }
-    body > header nav,
-    body > header nav a,
-    body > header .nav a,
-    body > header ul li a,
-    body > header a,
-    body > header span,
-    body > header strong {
-        font-size: 26px !important;   /* ヘッダー内項目のサイズ” */
-        color: #fff !important;
-        text-shadow: 0 1px 2px rgba(0,0,0,.35);
-    }
+
     </style>
+
 
     <!-- ▼ ボタン下マージン（全画面共通） -->
     <style id="button-margins">
@@ -811,6 +644,7 @@
     <!-- JS -->
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        
         // --- ログアウトモーダル ---
         const logoutLink = document.getElementById('logout-link');
         const modal = document.getElementById('logout-modal');
@@ -835,9 +669,11 @@
                 openModal(logoutLink.getAttribute('href'));
             });
         }
+        
         confirmBtn.addEventListener('click', () => {
             if (targetHref) window.location.href = targetHref;
         });
+        
         dismissEls.forEach(el => el.addEventListener('click', closeModal));
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
@@ -890,7 +726,73 @@
         dismissPhotoEls.forEach(el => el.addEventListener('click', closePhotoDeleteModal));
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePhotoDeleteModal(); });
 
-    });
+        // --- タイトルだけ自動縮小（項目は常に表示） ---
+        (function(){
+            const ul = document.querySelector('.app-header .header-list');
+            if (!ul) return;
+
+            // 基準値（最大画面時）：文字28px／箱260px
+            const BASE_FS = 28;   // px
+            const BASE_BOX = 260; // px
+            const MIN_FS  = 14;   // px（これ未満にはしない保険）
+            const MIN_BOX = 80;   // px（これ未満にはしない保険）
+
+            function getGaps(){
+                const cs = getComputedStyle(ul);
+                const gap  = parseFloat(cs.columnGap || cs.gap || '0') || 0;
+                const padL = parseFloat(cs.paddingLeft  || '0') || 0;
+                const padR = parseFloat(cs.paddingRight || '0') || 0;
+                return { gap, padL, padR };
+            }
+
+            function sumNonTitleWidth(){
+                const items = [...ul.children].filter(li => !li.classList.contains('site-title'));
+                return items.reduce((acc, li) => acc + li.getBoundingClientRect().width, 0);
+            }
+
+            function layout(){
+                const { gap, padL, padR } = getGaps();
+                const liCount   = ul.children.length;
+                const gapsTotal = gap * Math.max(liCount - 1, 0);
+
+                const containerW = ul.clientWidth;     // ULの内側幅
+                const nonTitleW  = sumNonTitleWidth(); // 非タイトル合計幅
+
+                // タイトルに割り当て可能な幅
+                let available = Math.max(0, containerW - nonTitleW - gapsTotal - padL - padR);
+
+                // 箱幅：最大260、足りなければavailableまで縮小、ただしMIN_BOX未満にはしない
+                let box = Math.min(BASE_BOX, available);
+                box = Math.max(box, MIN_BOX);
+
+                // 文字サイズ：箱幅に比例して縮小（28→…）、ただしMIN_FS未満にはしない
+                let fs = (box / BASE_BOX) * BASE_FS;
+                fs = Math.max(fs, MIN_FS);
+
+                // さらに狭いときの保険
+                if (available < MIN_BOX){
+                box = MIN_BOX;
+                fs  = Math.max((box / BASE_BOX) * BASE_FS, MIN_FS);
+                }
+
+                document.documentElement.style.setProperty('--hdr-title-box', box + 'px');
+                document.documentElement.style.setProperty('--hdr-title-fs',  fs  + 'px');
+            } // ←←← ここが抜けてた（関数を閉じる）
+
+            // 初回 & リサイズで適用（軽いデバウンス）
+            let rafId = null;
+            function onResize(){
+                if (rafId) cancelAnimationFrame(rafId);
+                rafId = requestAnimationFrame(() => {
+                rafId = null;
+                layout();
+                });
+            }
+
+            window.addEventListener('resize', onResize, { passive: true });
+            layout(); // 初期配置
+            })();
+        });
     </script>
 </body>
 </html>

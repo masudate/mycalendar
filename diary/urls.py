@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from diary import views
 
 
 urlpatterns = [
@@ -10,10 +11,16 @@ urlpatterns = [
     path("records/<int:pk>/delete/", views.record_delete, name="record_delete"),
     path("records/<int:pk>/photo_delete/", views.photo_delete, name="photo_delete"),
 
-    
     #設定関連
     path('settings/username/', views.change_username, name='change_username'),
     path('settings/email/', views.change_email, name='change_email'),
     path('settings/password/', views.change_password, name='change_password'),
+
+
+    #ポートフォリオ各資料へアクセス
+    path('pdf/proposal/', views.pdf_proposal, name='pdf_proposal'),
+    path('pdf/userflow/', views.pdf_userflow, name='pdf_userflow'),
+    path('pdf/er/', views.pdf_er, name='pdf_er'),
+    path('pdf/screen/', views.pdf_screen, name='pdf_screen'),
 ]
 

@@ -2,7 +2,7 @@
 {% block site_header %}{% endblock %}
 
 {% block content %}
-<div class="form-container">
+<div class="auth-page form-container">
     <h2 class="record-title">ジブンカレンダー</h2>
 
     <form method="post" class="settings-form" novalidate>
@@ -40,12 +40,12 @@
         </div>
     </form>
 
-    <style>
+    <style>    
     .auth-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 
     .auth-actions .auth-submit {
-        width: auto !important;      /* ← baseの width:100% を確実に無効化 */
-        display: inline-block !important; /* ← baseで block 指定されていても解除 */
+        width: auto !important;      
+        display: inline-block !important; 
         padding: 8px 12px;
         align-self: center;
     }
@@ -54,7 +54,9 @@
         display: flex; 
         flex-direction: column; 
         gap: 6px; 
-        align-items: center; }
+        align-items: center;
+        margin-bottom: 24px !important;
+    }
 
     .auth-links a {
         text-decoration: underline;
@@ -64,6 +66,9 @@
         background: none !important;
     }
     .auth-links a:hover { opacity: 0.8; }
+
+    .auth-page { margin-top: 36px !important; }
+    .record-title { margin-top: 50px; }
     </style>
 
 </div>
