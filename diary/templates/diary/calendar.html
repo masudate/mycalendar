@@ -58,16 +58,16 @@
   position:relative;
 }
 
-/* ▼ カレンダーセルにカーソルを乗せたときの反応 */
+/*  カレンダーセルにカーソルを乗せたときの反応 */
 .calendar-day {
-  cursor: pointer;  /* マウスカーソルを「手」にする */
+  cursor: pointer;  /* マウスカーソルを手にする */
   transition: background-color 0.2s ease;
 }
 .calendar-day:hover {
   background-color: rgba(0, 0, 0, 0.05); /* 薄いグレーを重ねる */
 }
 
-/* 曜日ヘッダ */
+/* 曜日ヘッダー */
 .calendar-table .weekday-row th{
   border:1px solid #000;
   padding:10px;
@@ -88,6 +88,13 @@
 /* 今日/前後月 */
 .is-outside{ color:#c7c7c7; }
 .is-outside .dot{ color:#d5d5d5; pointer-events:none; }
+
+/* 前月/次月リンクのフォント */
+.calendar-header .nav-link{
+  font-family: inherit;   /* ボタンと同じフォント */
+  font-weight: 500;       /* 太さ変更 */
+  text-underline-offset: 2px;
+}
 
 /* 写真サムネ用 */
 .cell-photo { 

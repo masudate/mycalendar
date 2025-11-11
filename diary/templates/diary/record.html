@@ -78,10 +78,11 @@
       </div>
 
       {% if not form.instance or not form.instance.photo %}
-      <!-- 写真（未登録時はここで登録） -->
+      <!-- 写真（未登録時） -->
       <div class="form-row photo-create-row">
         <label for="photo-input">写真</label>
-        <input type="file" id="photo-input" name="photo" accept="image/*">
+        <input type="file" id="photo-input" name="photo" accept="image/*" class="u-vh">
+        <label for="photo-input" class="btn btn-secondary filebtn">ファイルを選択</label>
 
         <!-- 新規選択プレビュー（初期は非表示） -->
         <div id="photo-preview-wrap" 
@@ -90,7 +91,7 @@
           style="background:transparent;border:0;padding:0;box-shadow:none;outline:0;{% if not preview_data_uri %}display:none;{% endif %}">
           <div class="photo-preview-title" style="font-size:12px;color:#555;display:none;">写真プレビュー</div>
 
-          <!-- プレビュー画像（枠ゼロ・角丸のみ） -->
+          <!-- プレビュー画像（枠ゼロ・角丸） -->
           <img id="photo-preview" alt=""
               {% if preview_data_uri %}
               src="{{ preview_data_uri }}"
@@ -99,7 +100,7 @@
               style="display:none;max-width:240px;max-height:160px;object-fit:cover;border:0;outline:0;box-shadow:none;border-radius:6px;"
               {% endif %}>
 
-          <!-- 新規選択後だけ出す操作ボタン -->
+          <!-- 写真選択後操作ボタン -->
           <div id="photo-new-actions" class="photo-actions">
             <button type="button" class="btn btn-danger-outline" id="btn-remove-photo">
               写真削除
@@ -273,7 +274,12 @@ input[type="date"], #mood { height: 40px; box-sizing: border-box; }
   justify-content: flex-start !important;
 }
 
-/* === 全体を中央寄せに戻す（プレビューは左寄せのまま） === */
+.filebtn {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* === 全体を中央寄せ（プレビューは左寄せのまま） === */
 .single-col { align-items: center !important; }
 .single-col .left-col { align-self: center !important; display: flex; flex-direction: column; align-items: stretch !important; }
 .single-col .left-col .form-row { width: 100%; max-width: var(--field-width, 520px); }
