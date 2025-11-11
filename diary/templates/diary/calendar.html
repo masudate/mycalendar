@@ -66,6 +66,10 @@
 .calendar-day:hover {
   background-color: rgba(0, 0, 0, 0.05); /* 薄いグレーを重ねる */
 }
+/* 未来日はクリックできない見た目 */
+.calendar-day.is-future { cursor: not-allowed; }
+.calendar-day.is-future:hover { background-color: rgba(0,0,0,.03); }
+.calendar-day.is-future .dot { pointer-events: none; opacity: .6; }
 
 /* 曜日ヘッダー */
 .calendar-table .weekday-row th{
@@ -117,7 +121,7 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-  // 1) 色付き●と写真の描画
+  //  色付き●と写真の描画
   const mapEl = document.getElementById("records-by-date");
   const dataMap = mapEl ? JSON.parse(mapEl.textContent) : {};
 
@@ -145,36 +149,104 @@ document.addEventListener("DOMContentLoaded", function() {
       box.innerHTML = "";
       if (photo) {
         const img = document.createElement("img");
-        img.src = "/media/" + photo;   // MEDIA_URLが /media/ 前提
+        img.src = "/media/" + photo;
         img.alt = "";
         box.appendChild(img);
       }
     }
   });
 
-  // セル全体クリックで遷移（画像・数字・● どこでもOK）
+  // === ここから 未来日ブロック ===
+  const TODAY = "{{ today|date:'Y-m-d' }}";  // サーバ時点の本日
+  const isFuture = iso => (iso && iso > TODAY);
+
+  document.querySelectorAll("td.calendar-day").forEach(td => {
+    const iso = td.dataset.date;
+    if (isFuture(iso)) {
+      td.classList.add("is-future");
+      td.setAttribute("aria-disabled", "true");
+      const a = td.querySelector("a.dot");
+      if (a) a.setAttribute("aria-disabled", "true");
+    }
+    td.tabIndex = 0;
+  });
+
+  // クリック（委譲）
   document.querySelector(".calendar-table")?.addEventListener("click", (e) => {
     const td = e.target.closest("td.calendar-day");
     if (!td) return;
 
-    if (e.target.closest("a.dot")) return;
-
     const iso = td.dataset.date;
     if (!iso) return;
-    window.location.href = `{% url 'record' %}?date=${iso}`;
+
+    if (isFuture(iso)) {
+      e.preventDefault();
+      e.stopPropagation();
+      showErrorMessageOnce("未来の日付はまだ記録できません");
+      return;
+    }
+
+    // a.dot をクリックした場合は通常遷移
+    if (e.target.closest("a.dot")) return;
+
+    // セルクリックで遷移
+    window.location.href = "{% url 'record' %}?date=" + iso;
   });
 
-  // 3) アクセシビリティ（キーボードでも遷移）
+  // キーボード操作（Enter/Space）
   document.querySelectorAll("td.calendar-day").forEach(td => {
-    td.tabIndex = 0; 
-    td.style.cursor = "pointer";
     td.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        const iso = td.dataset.date;
-        if (iso) window.location.href = `{% url 'record' %}?date=${iso}`;
+      if (!(e.key === "Enter" || e.key === " ")) return;
+      const iso = td.dataset.date;
+      if (!iso) return;
+
+      if (isFuture(iso)) {
+        e.preventDefault();
+        e.stopPropagation();
+        showErrorMessageOnce("未来の日付はまだ記録できません");
+        return;
       }
+      window.location.href = "{% url 'record' %}?date=" + iso;
     });
   });
 });
+
+// エラーメッセージ
+function ensureMessagesContainer() {
+  let box =
+    document.querySelector('.messages') ||
+    document.getElementById('messages');
+
+  if (!box) {
+    box = document.createElement('div');
+    box.className = 'messages';
+    
+    const main = document.querySelector('main') || document.body.firstElementChild;
+    if (main && main.parentNode) {
+      main.parentNode.insertBefore(box, main);
+    } else {
+      document.body.prepend(box);
+    }
+  }
+  return box;
+}
+
+function showErrorMessageOnce(text, key = 'generic') {
+  const wrap = ensureMessagesContainer();
+  const existing = wrap.querySelector(`.message.error[data-key="${key}"]`);
+  if (existing) return existing;
+
+  const item = document.createElement('div');
+  item.className = 'message error';
+  item.dataset.key = key;
+  item.setAttribute('role', 'alert');
+  item.setAttribute('aria-live', 'assertive');
+  item.innerHTML = `
+    <span class="message__text">${text}</span>
+  `;
+  wrap.prepend(item);
+  return item;
+}
+
 </script>
 {% endblock %}

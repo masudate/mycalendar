@@ -384,6 +384,12 @@
     }
     .errorlist li { margin: 2px 0; }
 
+    /* メッセージフェードアウト演出 */
+    .message.is-fading {animation: msgFadeOut .25s ease forwards;}
+    @keyframes msgFadeOut {
+        to { opacity: 0; transform: translateY(-4px); }
+    }
+
     /* ===============================
     7) Settings フォーム（設定画面共通）
     =============================== */
@@ -564,8 +570,6 @@
         margin-bottom: 0 !important;
     }
     </style>
-
-    
 </head>
 
 
@@ -734,8 +738,8 @@
             // 基準値（最大画面時）：文字28px／箱260px
             const BASE_FS = 28;   // px
             const BASE_BOX = 260; // px
-            const MIN_FS  = 14;   // px（これ未満にはしない保険）
-            const MIN_BOX = 80;   // px（これ未満にはしない保険）
+            const MIN_FS  = 14;   // px（これ未満にはしない）
+            const MIN_BOX = 80;   // px（これ未満にはしない）
 
             function getGaps(){
                 const cs = getComputedStyle(ul);
@@ -761,15 +765,15 @@
                 // タイトルに割り当て可能な幅
                 let available = Math.max(0, containerW - nonTitleW - gapsTotal - padL - padR);
 
-                // 箱幅：最大260、足りなければavailableまで縮小、ただしMIN_BOX未満にはしない
+                // 箱幅：最大260、availableまで縮小※MIN_BOX未満にしない
                 let box = Math.min(BASE_BOX, available);
                 box = Math.max(box, MIN_BOX);
 
-                // 文字サイズ：箱幅に比例して縮小（28→…）、ただしMIN_FS未満にはしない
+                // 文字サイズ：箱幅に比例して縮小※MIN_FS未満にしない
                 let fs = (box / BASE_BOX) * BASE_FS;
                 fs = Math.max(fs, MIN_FS);
 
-                // さらに狭いときの保険
+                // さらに狭いとき
                 if (available < MIN_BOX){
                 box = MIN_BOX;
                 fs  = Math.max((box / BASE_BOX) * BASE_FS, MIN_FS);
@@ -790,9 +794,40 @@
             }
 
             window.addEventListener('resize', onResize, { passive: true });
-            layout(); // 初期配置
+            layout();
             })();
         });
+
+        /* メッセージフェードアウト */
+        (() => {
+            const LIFETIME_MS = 10000; // 15秒
+            const SEL = '.message'; // メッセージすべて対象
+
+            function arm(msg){
+                if (!msg || msg.dataset.autoclose === '1') return; // 二重設定防止
+                msg.dataset.autoclose = '1';
+                setTimeout(() => {
+                msg.classList.add('is-fading');
+                msg.addEventListener('animationend', () => msg.remove(), { once:true });
+                setTimeout(() => { if (msg.isConnected) msg.remove(); }, 400); // フェード無効時の保険
+                }, LIFETIME_MS);
+            }
+
+            // 既存メッセージに適用
+            document.querySelectorAll(SEL).forEach(arm);
+
+            // 追加されるメッセージに適用
+            new MutationObserver(muts => {
+                muts.forEach(m => {
+                m.addedNodes.forEach(n => {
+                    if (n.nodeType !== 1) return;
+                    if (n.matches?.(SEL)) arm(n);
+                    n.querySelectorAll?.(SEL).forEach(arm);
+                });
+                });
+            }).observe(document.body, { childList:true, subtree:true });
+            })();
+
     </script>
 </body>
 </html>
