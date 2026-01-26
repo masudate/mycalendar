@@ -37,7 +37,10 @@
 }
 .calendar-header .ym{ margin:0; font-size:1.4rem; }
 .calendar-header .nav-link{
-  color:#1a73e8; text-decoration:underline; font-weight:500;
+  color: #1a73e8;
+  font-family: inherit;
+  font-weight: 500;
+  text-decoration: none;            /* ← 通常は下線なし */
 }
 .calendar-header .nav-link:hover{ opacity:0.9; }
 
@@ -96,7 +99,7 @@
 /* 前月/次月リンクのフォント */
 .calendar-header .nav-link{
   font-family: inherit;   /* ボタンと同じフォント */
-  font-weight: 500;       /* 太さ変更 */
+  font-weight: 500;
   text-underline-offset: 2px;
 }
 

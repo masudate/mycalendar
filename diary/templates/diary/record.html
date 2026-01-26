@@ -25,19 +25,22 @@
     <div class="left-col">
 
       <!-- 日付 -->
-      <div class="form-row">
-        <label for="{{ form.date.id_for_label }}">日付</label>
+      <div class="form-row {% if form.date.errors %}has-error{% endif %}">
+        <label for="{{ form.date.id_for_label }}">日付（必須）</label>
         {{ form.date }}
+        {% if form.date.errors %}
+          <p class="field-error">{{ form.date.errors.0 }}</p>
+        {% endif %}
       </div>
 
       <!-- 気分（●のみ）＋ ？ヘルプ -->
-      <div class="form-row">
+      <div class="form-row {% if form.mood.errors %}has-error{% endif %}">
         <div class="field-header">
-          <label for="mood">気分</label>
+          <label for="mood">気分（必須）</label>
           <span class="help" onclick="openMoodModal()">？</span>
         </div>
 
-        <!-- ネイティブ select（送信用）。後でJSが視覚的に隠す -->
+        <!-- 未選択表示 -->
         <select id="mood" name="mood">
           <option value="" data-color="">（未選択）</option>
           {% for m in moods %}
@@ -68,6 +71,10 @@
             {% endfor %}
           </div>
         </div>
+
+        {% if form.mood.errors %}
+          <p class="field-error">{{ form.mood.errors.0 }}</p>
+        {% endif %}
       </div>
 
 
@@ -162,7 +169,7 @@
   <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="moodTitle">
     <h3 id="moodTitle">気分の色とは</h3>
     <p>
-     色はご自由に意味づけ可能です。<br><br>
+     色は自由に意味づけ可能です。<br><br>
       その日の気分に近い色を1つ選んで記録します。<br><br>
       選んだ色はカレンダーに表示され、気分の変化を振り返ることができます。 
     </p>
@@ -341,6 +348,31 @@ input[type="date"], #mood { height: 40px; box-sizing: border-box; }
 .mood-option:hover{ background:#f7f7f7; }
 .mood-trigger.is-chosen .mood-label { display: none; }
 .mood-trigger.is-chosen { gap: 0; }
+
+/* 各フィールド直下のエラー表示 */
+.field-error{
+  margin: 4px 0 0;
+  color: #b00020;         /* 赤 */
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* エラーのある行は枠線を赤く */
+.has-error input[type="text"],
+.has-error input[type="date"],
+.has-error select,
+.has-error textarea {
+  border-color: #b00020;
+  outline: none;
+}
+
+/* アクセシビリティ：エラー対象にフォーカス時も見やすく */
+.has-error input:focus,
+.has-error select:focus,
+.has-error textarea:focus {
+  box-shadow: 0 0 0 3px rgba(176,0,32,.15);
+}
+
 
 </style>
 

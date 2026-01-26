@@ -96,7 +96,7 @@
     /* ===============================
     3) モーダル共通
     =============================== */
-    .modal { position: fixed; inset: 0; display: none; }
+    .modal { position: fixed; inset: 0; display: none; z-index: 4000; }
     .modal.show { display: block; }
 
     .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.35); }
@@ -441,7 +441,7 @@
 
 
     /* ===============================
-    8) ヘッダー（完成版：高さ/項目フォント固定、タイトルのみ可変）
+    8) ヘッダー（高さ/項目フォント固定、タイトルのみ可変）
     =============================== */
     :root{
     --header-h: 76px;          /* 高さ：固定 */
@@ -514,6 +514,24 @@
     @media (max-width: 800px) { :root{ --hdr-gap: 8px;  --hdr-pad-x: 4px; } }
     @media (max-width: 740px) { :root{ --hdr-gap: 6px;  --hdr-pad-x: 4px; } }
 
+    /* 全通常リンク：ホバー/キーボードフォーカスで下線 */
+    a:hover,
+    a:focus-visible {
+    text-decoration: underline !important;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 2px;
+    }
+
+    /* ボタン風リンク（.btn/.filebtn系）も同様に下線 */
+    .btn:hover,
+    .btn:focus-visible,
+    .btn-primary:hover,
+    .btn-danger:hover,
+    .btn-secondary:hover,
+    .btn-danger-outline:hover,
+    .filebtn:hover {
+    text-decoration: underline !important;
+    }
     
     </style>
 
@@ -569,6 +587,36 @@
     .compact-actions input[type="button"] {
         margin-bottom: 0 !important;
     }
+
+    /* ===============================
+    トースト（messages用）
+    =============================== */
+    .toast-area{
+    position: fixed;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    z-index: 3500; /* delete/logoutなどのmodalより下でも上でもOK。今は十分上 */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(92vw, 520px);
+    pointer-events: none;
+    }
+    .toast{
+    background: rgba(20,20,20,.92);
+    color: #fff;
+    padding: 12px 14px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.18);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: .18s ease;
+    font-size: 14px;
+    line-height: 1.6;
+    text-align: center;
+    }
+    .toast.show{ opacity: 1; transform: translateY(0); }
     </style>
 </head>
 
@@ -590,15 +638,34 @@
 
     <!-- メッセージ表示 -->
     {% if messages %}
-        <div class="messages">
-            {% for message in messages %}
-                <p class="message {{ message.tags }}">{{ message }}</p>
-            {% endfor %}
+    <!-- トースト表示エリア（通常メッセージ用） -->
+    <div id="toast-area" class="toast-area" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- messagesの中に modal タグがある時だけ使うメッセージモーダル -->
+    <div id="message-modal" class="modal" aria-hidden="true">
+        <div class="modal-backdrop" data-msg-dismiss aria-hidden="true"></div>
+        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="message-modal-title">
+        <h3 id="message-modal-title" class="modal-title">日付エラー</h3>
+        <div id="message-modal-body"></div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" data-msg-dismiss>閉じる</button>
         </div>
+        </div>
+    </div>
+
+    <!-- サーバーから来たmessagesをJSに渡す（DOMには上に表示しない） -->
+    <script>
+        window.__DJ_MESSAGES__ = [
+        {% for m in messages %}
+            { text: "{{ m|escapejs }}", tags: "{{ m.tags|escapejs }}" }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        ];
+    </script>
     {% endif %}
 
 
-    <main>
+
+    <main id="main" tabindex="-1">
         {% block content %}{% endblock %}
     </main>
 
@@ -798,35 +865,89 @@
             })();
         });
 
-        /* メッセージフェードアウト */
+        /* Django messages → toast / modal */
         (() => {
-            const LIFETIME_MS = 10000; // 15秒
-            const SEL = '.message'; // メッセージすべて対象
+        const msgs = window.__DJ_MESSAGES__ || [];
+        if (!msgs.length) return;
 
-            function arm(msg){
-                if (!msg || msg.dataset.autoclose === '1') return; // 二重設定防止
-                msg.dataset.autoclose = '1';
-                setTimeout(() => {
-                msg.classList.add('is-fading');
-                msg.addEventListener('animationend', () => msg.remove(), { once:true });
-                setTimeout(() => { if (msg.isConnected) msg.remove(); }, 400); // フェード無効時の保険
-                }, LIFETIME_MS);
-            }
+        const toastArea = document.getElementById('toast-area');
+        const msgModal = document.getElementById('message-modal');
+        const msgModalBody = document.getElementById('message-modal-body');
+        const msgDismiss = msgModal ? msgModal.querySelectorAll('[data-msg-dismiss]') : [];
 
-            // 既存メッセージに適用
-            document.querySelectorAll(SEL).forEach(arm);
+        let prevFocusEl = null;
 
-            // 追加されるメッセージに適用
-            new MutationObserver(muts => {
-                muts.forEach(m => {
-                m.addedNodes.forEach(n => {
-                    if (n.nodeType !== 1) return;
-                    if (n.matches?.(SEL)) arm(n);
-                    n.querySelectorAll?.(SEL).forEach(arm);
-                });
-                });
-            }).observe(document.body, { childList:true, subtree:true });
-            })();
+        function openMsgModal(html){
+            if (!msgModal || !msgModalBody) return;
+
+            prevFocusEl = document.activeElement;
+
+            msgModalBody.innerHTML = html;
+            msgModal.classList.add('show');
+            msgModal.setAttribute('aria-hidden','false');
+
+            const closeBtn = msgModal.querySelector('[data-msg-dismiss]');
+            closeBtn?.focus();
+        }
+
+        function closeMsgModal(){
+            if (!msgModal) return;
+            const active = document.activeElement;
+            if (active && msgModal.contains(active) && active.blur) active.blur();
+
+            const main = document.getElementById('main');
+            if (main) main.focus();
+
+            requestAnimationFrame(() => {
+                msgModal.classList.remove('show');
+                msgModal.setAttribute('aria-hidden','true');
+            });
+        }
+        msgDismiss.forEach(el => el.addEventListener('click', closeMsgModal));
+
+        function pushToast(text, tags){
+            if (!toastArea) return;
+            const kind =
+            (tags.includes('error') && 'error') ||
+            (tags.includes('success') && 'success') ||
+            (tags.includes('warning') && 'warning') ||
+            (tags.includes('info') && 'info') ||
+            '';
+
+            const div = document.createElement('div');
+            div.className = 'toast';
+            if (kind) div.setAttribute('data-kind', kind);
+            div.textContent = text;
+            toastArea.appendChild(div);
+
+            setTimeout(() => div.classList.add('show'), 20);
+            setTimeout(() => {
+            div.classList.remove('show');
+            setTimeout(() => div.remove(), 250);
+            }, 3500);
+        }
+
+        // modal タグ付き → モーダル、それ以外 → トースト
+        const modalMsgs = [];
+        const toastMsgs = [];
+
+        msgs.forEach(m => {
+            const tags = (m.tags || '');
+            if (tags.includes('modal')) modalMsgs.push(m);
+            else toastMsgs.push(m);
+        });
+
+        // 通常はトーストで流す
+        toastMsgs.forEach(m => pushToast(m.text, m.tags));
+
+        // モーダルはまとめて1回表示
+        if (modalMsgs.length) {
+            const html = '<p style="margin:0; text-align:center;">' +
+                modalMsgs.map(x => x.text).join('<br>') +
+                '</p>';
+            openMsgModal(html);
+        }
+        })();
 
     </script>
 </body>

@@ -278,12 +278,10 @@ def record_view(request, selected_date=None):
         # “日付未入力”を検出
         post_date_str = (request.POST.get("date") or "").strip()
         if not post_date_str:
-            messages.error(request, "日付を入力してください")
-            # 入力保持
-            form = RecordForm(request.POST, instance=existing)
+            form.add_error("date", "日付を入力してください")
             selected_mood_id = request.POST.get("mood") or None
             preview_data_uri = _make_preview_data_uri(request.FILES.get("photo"))
-
+            messages.error(request, "入力内容にエラーがあります")
             return render(request, "diary/record.html", {
                 "form": form,  
                 "moods": moods,
@@ -293,16 +291,19 @@ def record_view(request, selected_date=None):
                 "reset_photo": False,
                 "current_photo": (existing.photo if (existing and existing.photo) else None), 
                 "preview_data_uri": preview_data_uri,
-
             })
             
         #  気分必須チェック
         mood_id = (request.POST.get("mood") or "").strip()
         if not mood_id:
-            messages.error(request, "気分を選択してください")
-            selected_mood_id = None
-            # 入力保持
-            form = RecordForm(request.POST, instance=existing)
+            form.add_error("mood", "気分を選択してください")
+        elif not Mood.objects.filter(pk=mood_id).exists():
+            form.add_error("mood", "もう一度選び直してください")
+                    
+        if not form.is_valid():
+            selected_mood_id = request.POST.get("mood") or None
+            preview_data_uri = _make_preview_data_uri(request.FILES.get("photo"))
+            messages.error(request, "入力内容にエラーがあります")
             return render(request, "diary/record.html", {
                 "form": form,
                 "moods": moods,
@@ -316,15 +317,16 @@ def record_view(request, selected_date=None):
         mood_obj = get_object_or_404(Mood, pk=mood_id)
 
 
-        if form.is_valid():
-            data = form.cleaned_data
-            save_date = data.get("date")
+        data = form.cleaned_data
+        save_date = data.get("date")
             
-            # 日付範囲制限
-            if save_date and save_date > date.today():
-                messages.error(request, "未来の日付は記録できません")
+            
+        # 日付範囲制限
+        if save_date and save_date > date.today():
+                form.add_error("date", "未来の日付は登録できません")
+                messages.error(request, "未来の日付は登録できません", extra_tags="modal future-date")
                 selected_mood_id = request.POST.get("mood") or None
-                form = RecordForm(request.POST, instance=existing)
+                preview_data_uri = _make_preview_data_uri(request.FILES.get("photo"))
                 return render(request, "diary/record.html", {
                     "form": form,
                     "moods": moods,
@@ -334,9 +336,10 @@ def record_view(request, selected_date=None):
                     "reset_photo": False,
                     "current_photo": (existing.photo if (existing and existing.photo) else None),
                 })
-            if not save_date:
-                messages.error(request, "日付を入力してください")
+        if not save_date:
+                form.add_error("date", "日付を入力してください")
                 selected_mood_id = request.POST.get("mood") or None
+                preview_data_uri = _make_preview_data_uri(request.FILES.get("photo"))
                 return render(request, "diary/record.html", {
                     "form": form,
                     "moods": moods,
@@ -347,39 +350,53 @@ def record_view(request, selected_date=None):
                     "current_photo": (existing.photo if (existing and existing.photo) else None),
                 })
 
-            mood_value = data.get("mood")
-            note_value = (data.get("note") or "").strip()
-            uploaded   = data.get("photo")                         # ← ここでだけ参照
-            removing   = bool(request.POST.get("remove_photo"))
+        mood_value = data.get("mood")
+        note_value = (data.get("note") or "").strip()
+        uploaded   = data.get("photo")                         # ← ここでだけ参照
+        removing   = bool(request.POST.get("remove_photo"))
 
-            # 保存対象インスタンスを決定
-            instance = existing if existing else Record(user=request.user, date=save_date)
+        
+        if existing and existing.date and save_date != existing.date:
+            form.add_error("date", "日付は変更できません（別日で記録したい場合は、その日付を開いて記録してください）")
+            messages.error(request, "入力内容にエラーがあります")
+            selected_mood_id = request.POST.get("mood") or None
+            return render(request, "diary/record.html", {
+                "form": form,
+                "moods": moods,
+                "selected_mood_id": selected_mood_id,
+                "has_record": bool(existing),
+                "display_date": initial_date,
+                "reset_photo": False,
+                "current_photo": (existing.photo if (existing and existing.photo) else None),
+            })
 
-            # 置換前の古い写真を退避（保存後に消す用）
-            old_photo = instance.photo if getattr(instance, "photo", None) else None
+        # POSTの日付で既存を取り直す
+        existing_for_date = Record.objects.filter(user=request.user, date=save_date).first()
+        old_photo = existing_for_date.photo if (existing_for_date and existing_for_date.photo) else None
 
-            # フィールド更新
-            instance.mood = mood_obj
-            instance.note = note_value
+        # DBを更新or新規作成
+        instance, created = Record.objects.update_or_create(
+            user=request.user,
+            date=save_date,
+            defaults={
+                "mood": mood_obj,
+                "note": note_value,
+            },
+        )
 
-            if removing:
-                instance.photo = None
-            elif uploaded:
-                instance.photo = uploaded
+        if uploaded:
+            instance.photo = uploaded
+            instance.save(update_fields=["photo"])
 
-            # 保存
-            instance.date = save_date
-            instance.user = request.user
-            instance.save()
-
-            # 新規アップロードがあって、古いファイルが別物なら後始末
-            if uploaded and old_photo and getattr(old_photo, "name", None) != getattr(instance.photo, "name", None):
+            if old_photo and old_photo.name != instance.photo.name:
                 try:
                     old_photo.delete(save=False)
                 except Exception:
                     pass
-            messages.success(request, "記録を保存しました")
-            return redirect("calendar")
+
+        messages.success(request, "記録を保存しました")
+        return redirect("calendar")
+
         
     else:
         form = RecordForm(instance=existing) if existing else RecordForm(initial={"date": initial_date})

@@ -37,37 +37,67 @@
 
 </div>
 
-<!-- ページ専用スタイル -->
+
 <style>
-    /* タイトル中央 */
-        .settings-title{
-        text-align:center;
-        margin: 0 0 12px;
-    }
+  /* タイトル中央 */
+  .settings-title{
+    text-align:center;
+    margin: 0 0 12px;
+  }
 
-    /* 本文の幅を記録画面に合わせて中央へ */
-        .settings-wrap{
-        max-width: var(--field-width, 520px);
-        margin: 0 auto;
-    }
+  /* 本文の幅を記録画面に合わせて中央へ */
+  .settings-wrap{
+    max-width: var(--field-width, 520px);
+    margin: 0 auto;
+  }
 
-    /* 各カードのヘッダ：左にタイトル、右にボタン（縦中央） */
-    .setting-head{
-        display:flex;
-        justify-content: space-between;
-        align-items:center;
-        margin-bottom: 8px; /* タイトルと本文の間隔 */
-    }
+  /* 各カードのヘッダ：左にタイトル、右にボタン（縦中央） */
+  .setting-head{
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    margin-bottom: 8px; /* タイトルと本文の間隔 */
+  }
 
-    /* 値の表示 */
-    .setting-value{
-        font-size: 15px;
-        color:#333;
-        word-break: break-word;
-    }
+  /* 値の表示 */
+  .setting-value{
+    font-size: 15px;
+    color:#333;
+    word-break: break-word;
+  }
 
-    /* （任意）カード間の余白を統一したいとき */
-    .field-card{ margin-bottom: 14px; }
+  /* カード間の余白を統一 */
+  .field-card{ margin-bottom: 14px; }
+
+  /* 見出し行を左右に配置＆縦中央 */
+  .field-card .setting-head{
+  display: flex;
+  align-items: baseline;  /* ← 文字のベースラインで揃える */
+  justify-content: space-between;
+  gap: 12px;
+  }
+
+  /* ラベルの見た目を安定させる（任意） */
+  .field-card .setting-head label{
+    margin:0;
+    font-weight:700;
+    /* 複数カードで見出し幅を揃えたい場合は固定幅を付けてもOK
+      min-width: 8em; */
+  }
+
+  /* ボタンは右端に寄せる（保険） */
+  .field-card .setting-head .btn{
+  align-self: baseline;   /* ベースラインに乗せる */
+  line-height: 1.2;       /* 文字高さを抑える */
+  padding: 8px 12px;      /* 既存より高ければ少し小さめに */
+  margin-top: 2px; 
+  }
+
+  /* 本文側の値表示（今のままでOK、調整したければ） */
+  .field-card .setting-body .setting-value{
+    margin-top:6px;
+  }
+
 </style>
 
 {% endblock %}
