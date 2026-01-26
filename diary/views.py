@@ -133,7 +133,7 @@ def login_view(request):
 
         login(request, user)
         request.session["show_login_tip"] = True
-        messages.success(request, "ログインしました")
+        # messages.success(request, "ログインしました")
         return redirect("home")
     return render(request, "diary/login.html")
 
@@ -323,8 +323,8 @@ def record_view(request, selected_date=None):
             
         # 日付範囲制限
         if save_date and save_date > date.today():
-                form.add_error("date", "未来の日付は登録できません")
-                messages.error(request, "未来の日付は登録できません", extra_tags="modal future-date")
+                form.add_error("date", "未来の日付は記録できません")
+                messages.error(request, "未来の日付は記録できません", extra_tags="modal future-date")
                 selected_mood_id = request.POST.get("mood") or None
                 preview_data_uri = _make_preview_data_uri(request.FILES.get("photo"))
                 return render(request, "diary/record.html", {
