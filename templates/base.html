@@ -592,30 +592,35 @@
     トースト（messages用）
     =============================== */
     .toast-area{
-    position: fixed;
-    left: 50%;
-    bottom: 16px;
-    transform: translateX(-50%);
-    z-index: 3500; /* delete/logoutなどのmodalより下でも上でもOK。今は十分上 */
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: min(92vw, 520px);
-    pointer-events: none;
+        position: fixed;
+        left: 50%;
+        top: calc(var(--header-h) + 12px);
+        transform: translateX(-50%);
+        z-index: 3500;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: min(92vw, 520px);
+        pointer-events: none;
     }
+
     .toast{
-    background: rgba(20,20,20,.92);
-    color: #fff;
-    padding: 12px 14px;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.18);
-    opacity: 0;
-    transform: translateY(8px);
-    transition: .18s ease;
-    font-size: 14px;
-    line-height: 1.6;
-    text-align: center;
+        background: #fff;
+        color: #111;
+        padding: 13px 15px;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 10px 30px rgba(0,0,0,.12);
+        opacity: 0;
+        transform: translateY(-6px);
+        transition: .18s ease;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.7;
+        text-align: center;
+        border: 2px solid #111;
     }
+
     .toast.show{ opacity: 1; transform: translateY(0); }
     </style>
 </head>

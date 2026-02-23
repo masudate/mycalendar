@@ -16,7 +16,12 @@
      2) フォーム本体
 ========================= -->
 <form method="post" enctype="multipart/form-data" class="record-form" novalidate>
+  {{ recorded_dates|json_script:"recorded-dates" }}
+  
   {% csrf_token %}
+
+  <input type="hidden" name="confirm_overwrite" id="confirm_overwrite" value="0">
+  <input type="hidden" id="record_id" value="{{ form.instance.id|default:'' }}">
 
   <!-- 2-1) 上段：写真あり→2カラム / 写真なし→1カラムレイアウト -->
   <div class="{% if current_photo %}top-grid{% else %}single-col{% endif %}">
@@ -151,10 +156,10 @@
   <!-- 2-2) ボタン -->
   <div class="button-row">
     <button type="submit" class="btn btn-primary">保存</button>
-    {% if has_record %}
+    {% if form.instance and form.instance.id %}
       <a href="#"
-         class="btn btn-danger"
-         data-delete-url="{% url 'record_delete' form.instance.id %}">
+        class="btn btn-danger"
+        data-delete-url="{% url 'record_delete' form.instance.id %}">
         記録削除
       </a>
     {% endif %}
@@ -178,6 +183,22 @@
     </div>
   </div>
 </div>
+
+<!-- =========================
+     3-2) 上書き確認モーダル
+========================= -->
+<div id="overwrite-modal" class="modal" aria-hidden="true">
+  <div class="modal-backdrop" data-ov-dismiss aria-hidden="true"></div>
+  <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="overwrite-title">
+    <h3 id="overwrite-title" class="modal-title">確認</h3>
+    <p style="text-align:center;margin:0;">既に記録されています。上書きしますか？</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-danger" id="confirm-overwrite">上書きする</button>
+      <button type="button" class="btn btn-secondary" data-ov-dismiss>キャンセル</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- =========================
      4) ページ専用スタイル
@@ -562,7 +583,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* ================================
- * 5-4) 気分説明モーダル open/close（グローバル）
+ * 5-4) 気分説明モーダル open/close
  * ================================ */
 function openMoodModal() {
   const moodModal = document.getElementById("moodModal");
@@ -594,6 +615,69 @@ document.addEventListener("DOMContentLoaded", () => {
       existingImg.onload = () => URL.revokeObjectURL(url);
     });
   }
+
+  // 上書き確認（記録済み日付を選んだ時）
+  const form = document.querySelector('form.record-form');
+  if (!form) return;
+
+  const ovModal    = document.getElementById('overwrite-modal');
+  const confirmBtn = document.getElementById('confirm-overwrite');
+  const hidden     = document.getElementById('confirm_overwrite');
+  if (!ovModal || !confirmBtn || !hidden) return;
+
+  const dateInput = document.getElementById("{{ form.date.id_for_label }}");
+
+  const recordedDates = new Set(
+    JSON.parse(document.getElementById('recorded-dates')?.textContent || "[]")
+  );
+
+  function isRecordedDate(){
+    const d = dateInput ? dateInput.value : "";
+    return d && recordedDates.has(d);
+  }
+
+  function openOv(){
+    ovModal.classList.add('show');
+    ovModal.setAttribute('aria-hidden','false');
+    confirmBtn.focus();
+  }
+
+  function closeOv(){
+    const active = document.activeElement;
+    if (active && ovModal.contains(active) && active.blur) active.blur();
+
+    ovModal.classList.remove('show');
+    ovModal.setAttribute('aria-hidden','true');
+  }
+
+  // 閉じる
+  ovModal.querySelectorAll('[data-ov-dismiss]').forEach(el => el.addEventListener('click', closeOv));
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && ovModal.classList.contains('show')) closeOv(); });
+
+  // 日付を変えたら確認フラグ
+  if (dateInput) {
+    dateInput.addEventListener('change', () => {
+      hidden.value = "0";
+    });
+  }
+
+  // 日付が記録済なら止めて確認モーダル
+  form.addEventListener('submit', (e) => {
+    // 記録済じゃない → そのまま送信（新規作成）
+    if (!isRecordedDate()) return;
+
+    // 2回目（確認済み）なら通す
+    if (hidden.value === "1") return;
+
+    e.preventDefault();
+    openOv();
+  });
+
+  confirmBtn.addEventListener('click', () => {
+    hidden.value = "1";
+    closeOv();
+    form.requestSubmit();
+  });
 });
 </script>
 {% endblock %}

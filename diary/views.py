@@ -247,6 +247,13 @@ def record_view(request, selected_date=None):
         output_field=IntegerField(),
     )
     moods = Mood.objects.order_by(order, "id")
+    
+    # 上書き確認用：記録済み日付全て
+    recorded_dates = list(
+        Record.objects.filter(user=request.user).values_list("date", flat=True)
+    )
+    recorded_dates = [d.isoformat() for d in recorded_dates]
+
 
     if request.method == "POST":
         # ★ 記録削除処理
@@ -291,6 +298,7 @@ def record_view(request, selected_date=None):
                 "reset_photo": False,
                 "current_photo": (existing.photo if (existing and existing.photo) else None), 
                 "preview_data_uri": preview_data_uri,
+                "recorded_dates": recorded_dates,
             })
             
         #  気分必須チェック
@@ -311,7 +319,8 @@ def record_view(request, selected_date=None):
                 "has_record": bool(existing),
                 "display_date": initial_date,
                 "reset_photo": False,
-                "current_photo": (existing.photo if (existing and existing.photo) else None),  
+                "current_photo": (existing.photo if (existing and existing.photo) else None),
+                "recorded_dates": recorded_dates,  
             })
         # ここで必ず存在するMoodを取得（なければ404）
         mood_obj = get_object_or_404(Mood, pk=mood_id)
@@ -335,6 +344,7 @@ def record_view(request, selected_date=None):
                     "display_date": initial_date,
                     "reset_photo": False,
                     "current_photo": (existing.photo if (existing and existing.photo) else None),
+                    "recorded_dates": recorded_dates,
                 })
         if not save_date:
                 form.add_error("date", "日付を入力してください")
@@ -348,11 +358,12 @@ def record_view(request, selected_date=None):
                     "display_date": initial_date,
                     "reset_photo": False,
                     "current_photo": (existing.photo if (existing and existing.photo) else None),
+                    "recorded_dates": recorded_dates,
                 })
 
         mood_value = data.get("mood")
         note_value = (data.get("note") or "").strip()
-        uploaded   = data.get("photo")                         # ← ここでだけ参照
+        uploaded   = request.FILES.get("photo")                         # ← ここでだけ参照
         removing   = bool(request.POST.get("remove_photo"))
 
         
@@ -368,6 +379,7 @@ def record_view(request, selected_date=None):
                 "display_date": initial_date,
                 "reset_photo": False,
                 "current_photo": (existing.photo if (existing and existing.photo) else None),
+                "recorded_dates": recorded_dates,
             })
 
         # POSTの日付で既存を取り直す
@@ -414,6 +426,7 @@ def record_view(request, selected_date=None):
         "has_record": bool(existing),
         "display_date": initial_date,
         "current_photo": (existing.photo if (existing and existing.photo) else None),
+        "recorded_dates": recorded_dates,
     })
 
 @login_required
